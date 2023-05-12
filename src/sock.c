@@ -166,7 +166,6 @@ STATUS parse_test_request(struct test_info *test_info, char buf[], int n, FILE *
     test_info->test_type[sizeof(test_info->test_type)-1] = '\0';
     strncpy(test_info->branch_name, default_test_branch, sizeof(test_info->branch_name)-1);
     test_info->branch_name[sizeof(test_info->test_type)-1] = '\0';
-    test_info->is_python_test = FALSE;
 
     char *method, *path;
     size_t method_len, path_len, num_headers = 10;
