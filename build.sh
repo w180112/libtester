@@ -18,4 +18,4 @@ cp picohttpparser.h /usr/local/include/picohttpparser.h
 popd
 
 mkdir bin
-make && make install
+make && sudo make install
