@@ -15,8 +15,8 @@ gcc -shared -o libpicohttpparser.so picohttpparser.o
 sudo cp libpicohttpparser.so /usr/local/lib/libpicohttpparser.so
 sudo cp libpicohttpparser.a /usr/local/lib/libpicohttpparser.a
 sudo cp picohttpparser.h /usr/local/include/picohttpparser.h
-sudo ldconfig
 popd
 
 mkdir bin
 make && sudo make install
+sudo ldconfig
