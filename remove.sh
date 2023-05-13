@@ -1,8 +1,8 @@
 set -ex
 
 sudo make uninstall
-rm -rf /usr/local/lib/libpicohttpparser.*
-rm -rf /use/local/lib/libutils.*
+sudo rm -rf /usr/local/lib/libpicohttpparser.*
+sudo rm -rf /use/local/lib/libutils.*
 rm -rf /usr/local/include/util.h
 rm -rf /usr/local/include/ipc.h
 rm -rf /usr/local/include/md5.h
