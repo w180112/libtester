@@ -1,6 +1,5 @@
 set -ex
 
-#./essentials.sh
 git submodule update --init --recursive
 pushd lib/libutil
 autoreconf --install

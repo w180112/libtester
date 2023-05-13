@@ -1,15 +1,9 @@
 **/*.log*
-pcap_output
 bin
-**/*.pcap
-zlog-cfg-cur
 **/*.o
 .vscode
 **/*.a
 **/*.so
-**/Report
-**/__pycache__
-**/.pytest_cache
-**/*.pyc
 unit_test/unit-tester
 **/*.service
+example/tester/example_tester
