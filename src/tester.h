@@ -4,7 +4,7 @@
 #include <common.h>
 #include "thread.h"
 
-STATUS tester_start(int argc, char **argv, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread));
+STATUS tester_start(int argc, char **argv, char *test_types[], int test_type_count, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread));
 void tester_start_cmd(struct thread_list *thread);
 void tester_delete_cmd(struct thread_list *thread);
 void tester_wait_cmd_finished(struct thread_list *thread);

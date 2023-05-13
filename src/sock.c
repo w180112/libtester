@@ -119,7 +119,7 @@ void *recv_req(void *arg)
         thread_list_t *new_thread = (thread_list_t *)malloc(sizeof(thread_list_t));
         new_thread->sock = client_socket;
         new_thread->log_info.log_fp = thread_list_head->log_info.log_fp;
-        new_thread->test_type = UNKNOWN_TEST;
+        new_thread->test_type = -1;
         pthread_create(&new_thread->thread_id, NULL, recv_cmd, (void *restrict)new_thread);
     }
 }

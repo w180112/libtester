@@ -3,12 +3,7 @@
 
 #include <common.h>
 
-typedef enum {
-    UNKNOWN_TEST = 0,
-    TEST_TYPE_1 = 1,
-    TEST_TYPE_2 = 2,
-    TEST_TYPE_3 = 3,
-} TEST_TYPE;
+typedef int TEST_TYPE;
 
 struct exec_cmd_info{
     char cmd[8192];

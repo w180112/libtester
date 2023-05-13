@@ -12,7 +12,11 @@
 #include "resource.h"
 #include "parse.h"
 
-STATUS tester_start(int argc, char **argv, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread))
+extern BOOL is_test_able_rerun;
+extern char **total_test_types;
+extern TEST_TYPE total_test_types_count;
+
+STATUS tester_start(int argc, char **argv, char **test_types, int test_type_count, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread))
 {
     tTESTER_MBX		*mail;
 	tMBUF   		mbuf;
@@ -70,11 +74,28 @@ STATUS tester_start(int argc, char **argv, STATUS(* init_func)(thread_list_t *th
 
     if (options.daemon == TRUE) {
         if (daemon(1, 0))
-            TESTER_LOG(INFO, NULL, "daemonlize failed");
+            TESTER_LOG(INFO, log_fp, "daemonlize failed");
     }
 
 	if (shell_tester_init(&q_key, log_fp) < 0)
 		return ERROR;
+
+    if (test_types == NULL)
+        is_test_able_rerun = FALSE;
+    else {
+        total_test_types = malloc(sizeof(char *) * test_type_count);
+        if (total_test_types == NULL) {
+            TESTER_LOG(INFO, log_fp, "malloc total_test_types error");
+            return ERROR;
+        }
+        total_test_types_count = 0;
+        for (int i=0; i<test_type_count; i++) {
+            total_test_types[i] = malloc((strlen(test_types[i]) + 1) * sizeof(char));
+            strncpy(total_test_types[i], test_types[i], strlen(test_types[i]));
+            TESTER_LOG(INFO, log_fp, "test type: %s", total_test_types[i]);
+            total_test_types_count++;
+        }
+    }
 
     pthread_t processing;
     thread_list_head = (struct thread_list *)malloc(sizeof(struct thread_list));
@@ -116,6 +137,9 @@ STATUS tester_start(int argc, char **argv, STATUS(* init_func)(thread_list_t *th
     }
 
     pthread_join(processing, NULL);
+    for(int i=0; i<total_test_types_count; i++)
+        free(total_test_types[i]);
+    free(total_test_types);
 
     return SUCCESS;
 }

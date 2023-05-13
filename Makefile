@@ -14,6 +14,7 @@ SHARED = bin/libtester.so
 STATIC = bin/libtester.a
 OBJ = $(SRC:.c=.o)
 
+EXAMPLEDIR = example/tester
 TESTDIR = unit_test
 TESTBIN = unit-tester
 
@@ -23,9 +24,6 @@ all: build-libs
 # Compile & Link
 # 	Must use \tab key after new line
 ######################################
-$(BUILDSUBDIR):
-	${MAKE} -C $@
-
 build-libs: $(OBJ)
 	gcc -shared -o $(SHARED) $(OBJ) -lutils -lpicohttpparser -lpthread -lm -ldl -lutil -lconfig
 	ar -rcs $(STATIC) $(OBJ)
@@ -36,6 +34,9 @@ install:
 	cp config.cfg /etc/shell-tester/config.cfg
 	cp bin/libtester.so /usr/local/lib/libtester.so
 	cp bin/libtester.a /usr/local/lib/libtester.a
+
+example:
+	${MAKE} -C $(EXAMPLEDIR)
 
 test:
 	${MAKE} -C $(TESTDIR)
@@ -50,6 +51,7 @@ clean:
   	done
 	rm -rf $(OBJ) $(TARGET) $(SHARED) $(STATIC)
 	$(MAKE) -C $(TESTDIR) -f Makefile $@
+	$(MAKE) -C $(EXAMPLEDIR) -f Makefile $@
 
 uninstall:
 	rm -rf /var/log/shell-tester

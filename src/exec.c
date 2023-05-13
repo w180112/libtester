@@ -12,6 +12,10 @@
 #include "exec.h"
 #include "resource.h"
 
+BOOL is_test_able_rerun;
+char **total_test_types;
+TEST_TYPE total_test_types_count;
+
 #define READ 0
 #define WRITE 1
 extern char **environ;
@@ -98,24 +102,16 @@ char *trim_string(char *str)
     return str;
 }
 
-TEST_TYPE check_test_type(char *test_type, FILE *log_fp)
+TEST_TYPE check_test_type(char *test_type)
 {
-    if (strncmp("type1", test_type, strlen(test_type)) == 0) {
-        TESTER_LOG(INFO, log_fp, "test type1");
-        return TEST_TYPE_1;
+    for(int i=0; i<total_test_types_count; i++) {
+        if (strncmp(total_test_types[i], test_type, strlen(test_type)) == 0) {
+            TESTER_LOG(INFO, NULL, "test %s", test_type);
+            return i+1;
+        }
     }
-    else if (strncmp("type2", test_type, strlen(test_type)) == 0) {
-        TESTER_LOG(INFO, log_fp, "test type2");
-        return TEST_TYPE_2;
-    }
-    else if (strncmp("type3", test_type, strlen(test_type)) == 0) {
-        TESTER_LOG(INFO, log_fp, "test type3");
-        return TEST_TYPE_3;
-    }
-    else {
-        TESTER_LOG(INFO, log_fp, "test type %s not supported", test_type);
-        return UNKNOWN_TEST;
-    }
+    
+    return -1;
 }
 
 /**
@@ -215,6 +211,7 @@ void *get_cmd_output(void *arg)
         goto end;
     }
 
+    TESTER_LOG(INFO, this_thread->log_info.log_fp, "test succeed");
     drv_xmit((U8 *)http_ok_header, strlen(http_ok_header)+1, this_thread->sock);
 end:
     close_logfile(this_thread);
@@ -296,13 +293,13 @@ STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_pat
     char logfile_proc_path[LOG_PATH_LEN];
     char *http_result_code = http_fail_header;
     test_obj_t test_obj;
-        
-    FILE *log_fp = create_logfile(test_info.test_type, logfile_path, logfile_proc_path);
-    if (log_fp == NULL)
+
+    TEST_TYPE test_type = check_test_type(test_info.test_type);
+    if (test_type == -1)
         goto err;
 
-    TEST_TYPE test_type = check_test_type(test_info.test_type, log_fp);
-    if (test_type == UNKNOWN_TEST)
+    FILE *log_fp = create_logfile(test_info.test_type, logfile_path, logfile_proc_path);
+    if (log_fp == NULL)
         goto err;
     
     if (is_test_running(test_type) == TRUE) {
