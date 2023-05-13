@@ -1,5 +1,6 @@
 set -ex
 
+make uninstall
 rm -rf /usr/local/lib/libpicohttpparser.*
 rm -rf /use/local/lib/libutils.*
 rm -rf /usr/local/include/util.h

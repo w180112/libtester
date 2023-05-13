@@ -11,13 +11,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - run: sudo apt update && sudo apt install git gcc make python3-dev libtool-bin libconfig-dev libc6-dev -y
-    - run: ${{ github.workspace }}/build.sh
-    - run: make uninstall && remove.sh
+    - run: sudo ${{ github.workspace }}/build.sh
+    - run: sudo remove.sh
   test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - run: sudo apt update && sudo apt install git gcc make python3-dev libtool-bin libconfig-dev libc6-dev -y
-    - run: ${{ github.workspace }}/build.sh
+    - run: sudo ${{ github.workspace }}/build.sh
     - run: make test
-    - run: make uninstall && remove.sh
+    - run: sudo remove.sh
