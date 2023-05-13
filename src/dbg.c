@@ -26,7 +26,7 @@ void LOGGER(U8 level, char *filename, int line_num, FILE *log_fp, char *fmt,...)
     if (tester_dbg_flag > level)
     	return;
     
-	va_start(ap, fmt); /* set ap pointer to 1st unnamed arg */
+    va_start(ap, fmt); /* set ap pointer to 1st unnamed arg */
     vsnprintf(msg, LOGGER_VA_MSG_LEN, fmt, ap);
     sprintf(buf, "Shell tester: %s:%d> ", filename, line_num);
     

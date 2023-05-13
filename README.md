@@ -1,5 +1,7 @@
 # libtester project
 
+[![libtester ci](https://github.com/w180112/libtester/actions/workflows/ci.yml/badge.svg)](https://github.com/w180112/libtester/actions/workflows/ci.yml)
+
 ## Purpose
 - libtester is a custom shell executor for ci and regular test.
 - In some projects, which replies on sepcific execution environment to run custom regular ci or end2end test. Therefore we need a custom shell executor to make these projects test be run in specific environment.
