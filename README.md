@@ -37,7 +37,7 @@
         timeout: 60 minutes
         script: |
             while (( 1 )); do
-                status_code=$(curl --write-out %{http_code} --silent --output /dev/null -I -m 1200 -H "branch: "$CI_COMMIT_REF_NAME"" -H "test_type: go-docx-replacer" 192.168.10.151:55688)
+                status_code=$(curl --write-out %{http_code} --silent --output /dev/null -I -m 1200 -H "branch: "$GITHUB_REF_NAME"" -H "test_type: go-docx-replacer" 192.168.10.151:55688)
                 echo "$status_code"
                 case "$status_code" in
                     200)

@@ -4,8 +4,6 @@
 #include <resource.h>
 #include <dbg.h>
 
-STATUS ptf_test(thread_list_t *this_thread);
-
 STATUS init_test_env(thread_list_t *this_thread)
 {
     FILE *log_fp = this_thread->log_info.log_fp;
