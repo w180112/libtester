@@ -4,8 +4,8 @@
 
 ## Purpose
 - libtester is a custom shell executor for ci and regular test.
-- In some projects, which replies on sepcific execution environment to run custom regular ci or end2end test. Therefore we need a custom shell executor to make these projects test be run in specific environment.
-- The libtester is encapsulated in a library, libtester. User can just call the libtester API to start the test.
+- In some projects, which reply on sepcific execution environment to run custom regular ci or end2end test. Therefore we need a custom shell executor to make these projects test be run in specific environment.
+- The libtester is encapsulated in a library. User can just call the libtester API to start the tester.
 - User should add a curl cmd to send test request to the tester.
 
 ## Usage
