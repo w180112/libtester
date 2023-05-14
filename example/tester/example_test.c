@@ -47,7 +47,7 @@ STATUS start_test(thread_list_t *this_thread)
     }
     tester_start_cmd(run_thread);
     sleep(15);
-    ret = run_thread->exec_cmd.result;
+    ret = tester_get_test_result(run_thread);
     tester_stop_cmd(run_thread);
 
     return ret;

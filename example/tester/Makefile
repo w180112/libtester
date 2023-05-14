@@ -20,8 +20,8 @@ all: $(TARGET)
 # 	Must use \tab key after new line
 ######################################
 $(TARGET): $(OBJ)
-	libtool --mode=link $(CC) $(CFLAGS) -L../../bin -L/usr/lib/x86_64-linux-gnu/ $(OBJ) -o $(TARGET) \
-	-lpicohttpparser -lutils -lpthread -lm -ldl -lutil -lconfig ../../bin/libtester.so
+	libtool --mode=link $(CC) $(CFLAGS) -L/usr/lib/x86_64-linux-gnu/ $(OBJ) -o $(TARGET) \
+	-lpicohttpparser -lutils -lpthread -lm -ldl -lutil -lconfig -ltester
 
 ######################################
 # Clean 
