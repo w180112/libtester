@@ -28,4 +28,4 @@ $(TARGET): $(OBJ)
 # Clean 
 ######################################
 clean: 
-	rm -f $(OBJ) $(TARGET)
+	rm -rf $(OBJ) $(TARGET) .libs
