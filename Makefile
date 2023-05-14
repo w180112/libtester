@@ -35,7 +35,7 @@ install:
 	cp bin/libtester.so /usr/local/lib/libtester.so
 	cp bin/libtester.a /usr/local/lib/libtester.a
 
-example:
+tester:
 	${MAKE} -C $(EXAMPLEDIR)
 
 test:
