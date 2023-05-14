@@ -2,6 +2,7 @@
 #define _THREAD_H_
 
 #include <common.h>
+#include <uuid/uuid.h>
 
 typedef int TEST_TYPE;
 
@@ -36,6 +37,7 @@ typedef struct thread_list {
     struct exec_cmd_info exec_cmd;
     int sock;
     TEST_TYPE test_type;
+    uuid_t test_uuid;
     char script_path[PATH_MAX];
     char branch_name[128];
     struct thread_list *next;
@@ -55,11 +57,14 @@ typedef struct thread_list {
 extern thread_list_t *thread_list_head;
 extern pthread_mutex_t thread_list_lock;
 void add_thread_id_to_list(thread_list_t *new_thread);
+void add_thread_id_to_list_lock(thread_list_t *new_thread);
 BOOL is_thread_in_list(thread_list_t *thread);
+BOOL is_thread_in_list_lock(thread_list_t *thread);
 void remove_thread_id_from_list(thread_list_t *rm_thread);
 BOOL is_test_running(TEST_TYPE test_type);
 void get_all_timeout_threads_from_list(thread_list_t *timeout_thread, thread_list_t **timeout_list);
 void remove_all_threads_in_list(thread_list_t *del_list);
+void remove_all_timeout_threads_from_list(thread_list_t *timeout_thread);
 void remove_all_timeout_threads_from_list_lock(thread_list_t *timeout_thread);
 
 #endif

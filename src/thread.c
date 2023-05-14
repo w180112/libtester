@@ -1,5 +1,6 @@
 #include <common.h>
 #include <errno.h>
+#include <uuid/uuid.h>
 #include "thread.h"
 #include "exec.h"
 #include "resource.h"
@@ -14,21 +15,34 @@ void add_thread_id_to_list(thread_list_t *new_thread)
 {
     thread_list_t *cur;
 
-    pthread_mutex_lock(&thread_list_lock);
     for(cur=thread_list_head; cur!=NULL&&cur->next!=NULL; cur=cur->next);
     cur->next = new_thread;
+}
+
+void add_thread_id_to_list_lock(thread_list_t *new_thread)
+{
+    pthread_mutex_lock(&thread_list_lock);
+    add_thread_id_to_list(new_thread);
     pthread_mutex_unlock(&thread_list_lock);
 }
 
 BOOL is_thread_in_list(thread_list_t *thread)
 {
+    for(thread_list_t *cur=thread_list_head; cur!=NULL; cur=cur->next) {
+        if (cur == thread)
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+
+BOOL is_thread_in_list_lock(thread_list_t *thread)
+{
     BOOL ret = FALSE;
 
     pthread_mutex_lock(&thread_list_lock);
-    for(thread_list_t *cur=thread_list_head; cur!=NULL; cur=cur->next) {
-        if (cur == thread)
-            ret = TRUE;
-    }
+    ret = is_thread_in_list(thread);
     pthread_mutex_unlock(&thread_list_lock);
 
     return ret;
@@ -43,7 +57,7 @@ void remove_thread_id_from_list(thread_list_t *rm_thread)
     while(1) {
         if (cur == NULL || cur->next == NULL)
             break;
-        if (cur->next->exec_cmd.exec_pid == rm_thread->exec_cmd.exec_pid && cur->next->test_type == rm_thread->test_type) {
+        if (uuid_compare(cur->next->test_uuid, rm_thread->test_uuid) == 0) {
             cur->next = cur->next->next;
             kill_co_process(rm_thread);
             free(rm_thread);
@@ -72,12 +86,13 @@ BOOL is_test_running(TEST_TYPE test_type)
 void get_all_timeout_threads_from_list(thread_list_t *timeout_thread, thread_list_t **timeout_list)
 {
     thread_list_t *next = thread_list_head, *cur = NULL, *prev = NULL;
-    TEST_TYPE test_type = timeout_thread->test_type;
+    uuid_t timeout_uuid;
+    uuid_copy(timeout_uuid, timeout_thread->test_uuid);
 
     while(next!=NULL) {
         cur = next;
         next=next->next;
-        if (test_type == cur->test_type) {
+        if (uuid_compare(timeout_uuid, cur->test_uuid) == 0) {
             cur->next = *timeout_list;
             *timeout_list = cur;
             if (prev != NULL)
@@ -104,11 +119,17 @@ void remove_all_threads_in_list(thread_list_t *del_list)
     }
 }
 
-void remove_all_timeout_threads_from_list_lock(thread_list_t *timeout_thread)
-{   
+void remove_all_timeout_threads_from_list(thread_list_t *timeout_thread)
+{
     thread_list_t *timeout_list = NULL;
-    pthread_mutex_lock(&thread_list_lock);
+
     get_all_timeout_threads_from_list(timeout_thread, &timeout_list);
     remove_all_threads_in_list(timeout_list);
+}
+
+void remove_all_timeout_threads_from_list_lock(thread_list_t *timeout_thread)
+{   
+    pthread_mutex_lock(&thread_list_lock);
+    remove_all_timeout_threads_from_list(timeout_thread);
     pthread_mutex_unlock(&thread_list_lock);
 }

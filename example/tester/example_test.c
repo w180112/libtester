@@ -62,6 +62,6 @@ int main(int argc, char **argv)
 {
     char *test_type[] = {"go-docx-replacer"};
 
-    tester_start(argc, argv, test_type, 1, init_test_env, start_test);
+    tester_start(argc, argv, test_type, 1, TRUE, init_test_env, start_test);
     return 0;
 }

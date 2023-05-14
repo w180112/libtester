@@ -25,7 +25,7 @@ all: build-libs
 # 	Must use \tab key after new line
 ######################################
 build-libs: $(OBJ)
-	gcc -shared -o $(SHARED) $(OBJ) -lutils -lpicohttpparser -lpthread -lm -ldl -lutil -lconfig
+	gcc -shared -o $(SHARED) $(OBJ) -lutils -lpicohttpparser -lpthread -lm -ldl -lutil -lconfig -luuid
 	ar -rcs $(STATIC) $(OBJ)
 
 install:

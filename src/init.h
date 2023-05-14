@@ -6,6 +6,7 @@
 extern STATUS shell_tester_ipc_init(void);
 extern int shell_tester_init(tIPC_ID *q_key, FILE *log_fp);
 extern void shell_tester_bye(int signal_num);
+extern void shell_tester_clean();
 
 extern tIPC_ID q_key;
 

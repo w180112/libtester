@@ -22,7 +22,7 @@ all: $(TARGET)
 ######################################
 $(TARGET): $(OBJ)
 	libtool --mode=link $(CC) $(CFLAGS) -L/usr/lib/x86_64-linux-gnu/ $(OBJ) -o $(TARGET) \
-	-static -lpicohttpparser -ltester -lutils -lpthread -lm -ldl -lutil -lconfig
+	-static -lpicohttpparser -ltester -lutils -lpthread -lm -ldl -lutil -lconfig -luuid
 
 ######################################
 # Clean 

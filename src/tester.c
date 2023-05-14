@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <uuid/uuid.h>
 #include "tester.h"
 #include "sock.h"
 #include "init.h"
@@ -16,13 +17,14 @@ extern BOOL is_test_able_rerun;
 extern char **total_test_types;
 extern TEST_TYPE total_test_types_count;
 
-STATUS tester_start(int argc, char **argv, char **test_types, int test_type_count, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread))
+STATUS tester_start(int argc, char **argv, char **test_types, int test_type_count, BOOL allow_test_able_rerun, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread))
 {
     tTESTER_MBX		*mail;
 	tMBUF   		mbuf;
 	int				msize;
 	U16				ipc_type;
     tIPC_PRIM		*ipc_prim;
+    STATUS          ret;
 
     struct cmd_opt options = {
         .daemon = FALSE,
@@ -38,6 +40,10 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
         return ERROR;
     }
     TESTER_LOG(INFO, NULL, "loglvl is %s", loglvl2str(tester_dbg_flag));
+    if (test_types == NULL) {
+        TESTER_LOG(INFO, NULL, "test_types is empty");
+        return ERROR;
+    }
 
     if (strlen(options.service_logfile_path) == 0) {
         if (getcwd(options.service_logfile_path, sizeof(options.service_logfile_path)) != NULL)
@@ -77,25 +83,25 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
             TESTER_LOG(INFO, log_fp, "daemonlize failed");
     }
 
-	if (shell_tester_init(&q_key, log_fp) < 0)
+	if (shell_tester_init(&q_key, log_fp) < 0) {
+        fclose(log_fp);
 		return ERROR;
-
-    if (test_types == NULL)
-        is_test_able_rerun = FALSE;
-    else {
-        total_test_types = malloc(sizeof(char *) * test_type_count);
-        if (total_test_types == NULL) {
-            TESTER_LOG(INFO, log_fp, "malloc total_test_types error");
-            return ERROR;
-        }
-        total_test_types_count = 0;
-        for (int i=0; i<test_type_count; i++) {
-            total_test_types[i] = malloc((strlen(test_types[i]) + 1) * sizeof(char));
-            strncpy(total_test_types[i], test_types[i], strlen(test_types[i]));
-            TESTER_LOG(INFO, log_fp, "test type: %s", total_test_types[i]);
-            total_test_types_count++;
-        }
     }
+
+    total_test_types = malloc(sizeof(char *) * test_type_count);
+    if (total_test_types == NULL) {
+        TESTER_LOG(INFO, log_fp, "malloc total_test_types error");
+        ret = ERROR;
+        goto end;
+    }
+    total_test_types_count = 0;
+    for (int i=0; i<test_type_count; i++) {
+        total_test_types[i] = malloc((strlen(test_types[i]) + 1) * sizeof(char));
+        strncpy(total_test_types[i], test_types[i], strlen(test_types[i]));
+        TESTER_LOG(INFO, log_fp, "test type: %s", total_test_types[i]);
+        total_test_types_count++;
+    }
+    is_test_able_rerun = allow_test_able_rerun;
 
     pthread_t processing;
     thread_list_head = (struct thread_list *)malloc(sizeof(struct thread_list));
@@ -117,14 +123,16 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
 		case IPC_EV_TYPE_TMR:
             ipc_prim = (tIPC_PRIM *)mbuf.mtext;
             thread_list_t *timeout_thread = (thread_list_t *)ipc_prim->ccb;
+            pthread_mutex_lock(&thread_list_lock);
             if (is_thread_in_list(timeout_thread) == TRUE) {
                 TESTER_LOG(INFO, timeout_thread->log_info.log_fp, "test [%s] timeout", timeout_thread->exec_cmd.cmd);
                 drv_xmit((U8 *)http_fail_header, strlen(http_fail_header)+1, timeout_thread->sock);
                 /* we need to get log_fp in advance because timeout_thread memory region will be free */
                 FILE *log_fp = timeout_thread->log_info.log_fp;
-                remove_all_timeout_threads_from_list_lock(timeout_thread);
+                remove_all_timeout_threads_from_list(timeout_thread);
                 fclose(log_fp);
             }
+            pthread_mutex_unlock(&thread_list_lock);
 			break;
 		case IPC_EV_TYPE_DRV:
 			mail = (tTESTER_MBX *)mbuf.mtext;
@@ -141,7 +149,13 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
         free(total_test_types[i]);
     free(total_test_types);
 
-    return SUCCESS;
+    ret = SUCCESS;
+
+end:
+    shell_tester_clean();
+    fclose(log_fp);
+
+    return ret;
 }
 
 
@@ -151,7 +165,7 @@ void tester_start_cmd(struct thread_list *thread)
         TESTER_LOG(INFO, NULL, "started thread obj is NULL");
         return;
     }
-    add_thread_id_to_list(thread);
+    add_thread_id_to_list_lock(thread);
     pthread_create(&thread->thread_id, NULL, tester_exec_cmd_in_thread, (void *restrict)thread);
 }
 
@@ -166,7 +180,7 @@ void tester_delete_cmd(struct thread_list *thread)
 {
     if (thread == NULL)
         return;
-    if (is_thread_in_list(thread) == TRUE) {
+    if (is_thread_in_list_lock(thread) == TRUE) {
         remove_thread_id_from_list(thread);
         return;
     }
@@ -224,6 +238,7 @@ struct thread_list *tester_new_cmd(struct thread_list base_thread, const char *c
     new_thread->log_info.log_fp = base_thread.log_info.log_fp;
     new_thread->thread_id = 0;
     new_thread->test_type = base_thread.test_type;
+    uuid_copy(new_thread->test_uuid, base_thread.test_uuid);
     new_thread->pid_list = NULL;
     new_thread->next = NULL;
 

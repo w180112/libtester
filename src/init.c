@@ -10,6 +10,13 @@ tIPC_ID shell_tester_qid=-1;
 tIPC_ID q_key;
 pid_t 	tmr_pid;
 
+void shell_tester_clean()
+{
+    TESTER_LOG(INFO, NULL, "delete Qid(0x%x)", shell_tester_qid);
+    DEL_MSGQ(shell_tester_qid);
+	tmrExit();
+}
+
 /*---------------------------------------------------------
  * shell_tester_bye : signal handler for INTR-C only
  *--------------------------------------------------------*/
@@ -18,9 +25,7 @@ void shell_tester_bye(int signal_num, siginfo_t *info, void *context)
 	(void)(context);
 
 	TESTER_LOG(INFO, NULL, "recv signal %d, code %d", signal_num, info->si_code);
-    TESTER_LOG(INFO, NULL, "delete Qid(0x%x)",shell_tester_qid);
-    DEL_MSGQ(shell_tester_qid);
-	tmrExit();
+    shell_tester_clean();
     TESTER_LOG(INFO, NULL, "bye!");
 	_exit(0);
 }

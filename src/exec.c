@@ -5,6 +5,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <uuid/uuid.h>
 #include "sock.h"
 #include "init.h"
 #include "dbg.h"
@@ -302,10 +303,12 @@ STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_pat
     if (log_fp == NULL)
         goto err;
     
-    if (is_test_running(test_type) == TRUE) {
-        TESTER_LOG(INFO, log_fp, "test [%s] is still running", test_info.test_type);
-        http_result_code = http_503_header;
-        goto err;
+    if (is_test_able_rerun == FALSE) {
+        if (is_test_running(test_type) == TRUE) {
+            TESTER_LOG(INFO, log_fp, "test [%s] is still running", test_info.test_type);
+            http_result_code = http_503_header;
+            goto err;
+        }
     }
 
     test_obj.init_func = init_func;
@@ -330,7 +333,8 @@ STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_pat
         if (test_info.branch_name != NULL)
             strncpy(test_thread->branch_name, test_info.branch_name, sizeof(test_thread->branch_name)-1);
         test_thread->branch_name[sizeof(test_thread->branch_name)-1] = '\0';
-        add_thread_id_to_list(test_thread);
+        uuid_generate(test_thread->test_uuid);
+        add_thread_id_to_list_lock(test_thread);
         test_obj.base_thread = test_thread;
         pthread_create(&test_thread->thread_id, NULL, get_cmd_output, (void *restrict)&test_obj);
     }
