@@ -1,8 +1,8 @@
 #include <common.h>
-#include <thread.h>
-#include <exec.h>
-#include <resource.h>
-#include <dbg.h>
+#include <tester/thread.h>
+#include <tester/exec.h>
+#include <tester/resource.h>
+#include <tester/dbg.h>
 
 STATUS init_test_env(thread_list_t *this_thread)
 {

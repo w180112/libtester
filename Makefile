@@ -29,9 +29,11 @@ build-libs: $(OBJ)
 	ar -rcs $(STATIC) $(OBJ)
 
 install:
-	mkdir -p /var/log/shell-tester
-	mkdir -p /etc/shell-tester
-	cp config.cfg /etc/shell-tester/config.cfg
+	mkdir -p /var/log/libtester
+	mkdir -p /etc/libtester
+	mkdir -p /usr/local/include/tester
+	cp src/*.h /usr/local/include/tester/
+	cp config.cfg /etc/libtester/config.cfg
 	cp bin/libtester.so /usr/local/lib/libtester.so
 	cp bin/libtester.a /usr/local/lib/libtester.a
 
@@ -54,7 +56,8 @@ clean:
 	$(MAKE) -C $(EXAMPLEDIR) -f Makefile $@
 
 uninstall:
-	rm -rf /var/log/shell-tester
-	rm -rf /etc/shell-tester
+	rm -rf /var/log/libtester
+	rm -rf /etc/libtester
+	rm -rf /usr/local/include/tester
 	rm -f /usr/local/lib/libtester.so
 	rm -f /usr/local/lib/libtester.a

@@ -6,7 +6,7 @@
 # Set variable
 ######################################	
 CC	= gcc
-INCLUDE = -I../../lib/libutil -I../../src
+INCLUDE = 
 CFLAGS = $(INCLUDE) -Wall -fPIC -g
 
 TARGET = example_tester

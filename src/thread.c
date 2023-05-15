@@ -57,7 +57,8 @@ void remove_thread_id_from_list(thread_list_t *rm_thread)
     while(1) {
         if (cur == NULL || cur->next == NULL)
             break;
-        if (uuid_compare(cur->next->test_uuid, rm_thread->test_uuid) == 0) {
+        if (cur->next->exec_cmd.exec_pid == rm_thread->exec_cmd.exec_pid && \
+            uuid_compare(cur->next->test_uuid, rm_thread->test_uuid) == 0) {
             cur->next = cur->next->next;
             kill_co_process(rm_thread);
             free(rm_thread);

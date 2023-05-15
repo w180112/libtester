@@ -54,9 +54,7 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
         }
     }
     if (strlen(options.default_script_path) == 0) {
-        strncpy(options.default_script_path, options.service_logfile_path, PATH_MAX-strlen("/src")-1);
-        options.default_script_path[PATH_MAX-strlen("/src")-1] = '\0';
-        strncat(options.default_script_path, "/src", PATH_MAX-1);
+        strncpy(options.default_script_path, options.service_logfile_path, PATH_MAX-1);
         options.default_script_path[PATH_MAX-1] = '\0';
     }
     if (strlen(options.service_config_path) == 0) {
@@ -68,7 +66,7 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
     TESTER_LOG(INFO, NULL, "use %s as config file directory", options.service_config_path);
 
     char pwd[PATH_MAX];
-    char *logfile_name = "/shell-tester.log";
+    char *logfile_name = "/libtester.log";
     strncpy(pwd, options.service_logfile_path, PATH_MAX-strlen(logfile_name)-1);
     pwd[PATH_MAX-strlen(logfile_name)-1] = '\0';
 
@@ -97,7 +95,7 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
     total_test_types_count = 0;
     for (int i=0; i<test_type_count; i++) {
         total_test_types[i] = malloc((strlen(test_types[i]) + 1) * sizeof(char));
-        strncpy(total_test_types[i], test_types[i], strlen(test_types[i]));
+        strncpy(total_test_types[i], test_types[i], strlen(test_types[i])+1);
         TESTER_LOG(INFO, log_fp, "test type: %s", total_test_types[i]);
         total_test_types_count++;
     }
