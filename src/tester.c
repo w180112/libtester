@@ -1,8 +1,8 @@
-#include <errno.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 #include <uuid/uuid.h>
 #include "tester.h"
 #include "sock.h"
@@ -35,60 +35,47 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
     if (parse_cmd(argc, argv, &options) == ERROR)
         return ERROR;
 
-    if (parse_config(options.service_config_path, "/config.cfg") == ERROR) {
-        TESTER_LOG(INFO, NULL, "parse config file error");
-        return ERROR;
-    }
-    TESTER_LOG(INFO, NULL, "loglvl is %s", loglvl2str(tester_dbg_flag));
     if (test_types == NULL) {
-        TESTER_LOG(INFO, NULL, "test_types is empty");
+        TESTER_LOG(INFO, NULL, 0, "test_types is empty");
         return ERROR;
     }
 
     if (strlen(options.service_logfile_path) == 0) {
-        if (getcwd(options.service_logfile_path, sizeof(options.service_logfile_path)) != NULL)
-            TESTER_LOG(DBG, NULL, "Current working dir: %s", options.service_logfile_path);
-        else {
-            TESTER_LOG(DBG, NULL, "getcwd() error: %s", strerror(errno));
-            return ERROR;
-        }
+        strncpy(options.service_logfile_path, "/var/log/libtester", PATH_MAX-1);
+        options.service_logfile_path[PATH_MAX-1] = '\0';
     }
     if (strlen(options.default_script_path) == 0) {
-        strncpy(options.default_script_path, options.service_logfile_path, PATH_MAX-1);
+        strncpy(options.default_script_path, "/usr/local/bin/libtester", PATH_MAX-1);
         options.default_script_path[PATH_MAX-1] = '\0';
     }
     if (strlen(options.service_config_path) == 0) {
-        strncpy(options.service_config_path, options.service_logfile_path, PATH_MAX-1);
+        strncpy(options.service_config_path, "/etc/libtester/config.cfg", PATH_MAX-1);
         options.service_config_path[PATH_MAX-1] = '\0';
     }
-    TESTER_LOG(INFO, NULL, "use %s as logfile directory", options.service_logfile_path);
-    TESTER_LOG(INFO, NULL, "use %s as default script exec directory", options.default_script_path);
-    TESTER_LOG(INFO, NULL, "use %s as config file directory", options.service_config_path);
+    TESTER_LOG(INFO, NULL, 0, "use %s as logfile located directory", options.service_logfile_path);
+    TESTER_LOG(INFO, NULL, 0, "use %s as custom script located directory", options.default_script_path);
+    TESTER_LOG(INFO, NULL, 0, "use %s as config file", options.service_config_path);
 
-    char pwd[PATH_MAX];
-    char *logfile_name = "/libtester.log";
-    strncpy(pwd, options.service_logfile_path, PATH_MAX-strlen(logfile_name)-1);
-    pwd[PATH_MAX-strlen(logfile_name)-1] = '\0';
-
-    FILE *log_fp = fopen(strncat(pwd, logfile_name, strlen(logfile_name)+1), "w");
-    if (log_fp == NULL) {
-        TESTER_LOG(INFO, NULL, "open tester logfile failed: %s", strerror(errno));
+    if (parse_config(options.service_config_path) == ERROR) {
+        TESTER_LOG(INFO, NULL, 0, "parse config file error");
         return ERROR;
     }
+    TESTER_LOG(INFO, NULL, 0, "loglvl is %s", loglvl2str(tester_dbg_flag));
 
-    if (options.daemon == TRUE) {
-        if (daemon(1, 0))
-            TESTER_LOG(INFO, log_fp, "daemonlize failed");
-    }
-
-	if (shell_tester_init(&q_key, log_fp) < 0) {
+    FILE *log_fp;
+	if (libtester_init(&q_key, options.service_logfile_path, &log_fp) < 0) {
         fclose(log_fp);
 		return ERROR;
     }
 
+    if (options.daemon == TRUE) {
+        if (daemon(1, 0))
+            TESTER_LOG(INFO, log_fp, 0, "daemonlize failed");
+    }
+
     total_test_types = malloc(sizeof(char *) * test_type_count);
     if (total_test_types == NULL) {
-        TESTER_LOG(INFO, log_fp, "malloc total_test_types error");
+        TESTER_LOG(INFO, log_fp, 0, "malloc total_test_types error");
         ret = ERROR;
         goto end;
     }
@@ -96,7 +83,7 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
     for (int i=0; i<test_type_count; i++) {
         total_test_types[i] = malloc((strlen(test_types[i]) + 1) * sizeof(char));
         strncpy(total_test_types[i], test_types[i], strlen(test_types[i])+1);
-        TESTER_LOG(INFO, log_fp, "test type: %s", total_test_types[i]);
+        TESTER_LOG(INFO, log_fp, 0, "test type: %s", total_test_types[i]);
         total_test_types_count++;
     }
     is_test_able_rerun = allow_test_able_rerun;
@@ -110,9 +97,9 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
     pthread_create(&processing, NULL, recv_req, (void *restrict)&q_key);
 
 	for(;;) {
-		TESTER_LOG(INFO, log_fp, "%s","======================== waiting for new event ========================");
+		TESTER_LOG(INFO, log_fp, 0, "%s","======================== waiting for new event ========================");
         if (ipc_rcv2(q_key, &mbuf, &msize) == ERROR) {
-            TESTER_LOG(INFO, log_fp, "%s", "========== ipc error ==========");
+            TESTER_LOG(INFO, log_fp, 0, "%s", "========== ipc error ==========");
             sleep(1);
 			continue;
         }
@@ -123,7 +110,8 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
             thread_list_t *timeout_thread = (thread_list_t *)ipc_prim->ccb;
             pthread_mutex_lock(&thread_list_lock);
             if (is_thread_in_list(timeout_thread) == TRUE) {
-                TESTER_LOG(INFO, timeout_thread->log_info.log_fp, "test [%s] timeout", timeout_thread->exec_cmd.cmd);
+                TEST_TYPE test_type = timeout_thread->test_type;
+                TESTER_LOG(INFO, timeout_thread->log_info.log_fp, test_type, "test [%s] timeout", timeout_thread->exec_cmd.cmd);
                 drv_xmit((U8 *)http_fail_header, strlen(http_fail_header)+1, timeout_thread->sock);
                 /* we need to get log_fp in advance because timeout_thread memory region will be free */
                 FILE *log_fp = timeout_thread->log_info.log_fp;
@@ -150,7 +138,7 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
     ret = SUCCESS;
 
 end:
-    shell_tester_clean();
+    libtester_clean();
     fclose(log_fp);
 
     return ret;
@@ -159,8 +147,10 @@ end:
 
 void tester_start_cmd(struct thread_list *thread)
 {
+    TEST_TYPE test_type = thread->test_type;
+
     if (thread == NULL) {
-        TESTER_LOG(INFO, NULL, "started thread obj is NULL");
+        TESTER_LOG(INFO, NULL, test_type, "started thread obj is NULL");
         return;
     }
     add_thread_id_to_list_lock(thread);
@@ -227,9 +217,11 @@ STATUS tester_get_test_result(struct thread_list *thread)
 */
 struct thread_list *tester_new_cmd(struct thread_list base_thread, const char *cmd, const char *result_check, U16 timeout_sec)
 {
+    TEST_TYPE test_type = base_thread.test_type;
+
     struct thread_list *new_thread = (struct thread_list *)malloc(sizeof(struct thread_list));
     if (new_thread == NULL) {
-        TESTER_LOG(INFO, base_thread.log_info.log_fp, "allocate memory for thread object failed: %s", strerror(errno));
+        TESTER_LOG(INFO, base_thread.log_info.log_fp, test_type, "allocate memory for thread object failed: %s", strerror(errno));
         return NULL;
     }
     new_thread->sock = base_thread.sock;

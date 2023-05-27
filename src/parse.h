@@ -16,6 +16,6 @@ struct cfg_opt {
 };
 
 STATUS parse_cmd(int argc, char **argv, struct cmd_opt *options);
-STATUS parse_config(const char *config_dirpath, const char *config_filename);
+STATUS parse_config(const char *config_path);
 
 #endif

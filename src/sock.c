@@ -27,19 +27,19 @@ STATUS init_sock(int *server_socket, FILE *log_fp)
     char test_if_name[IF_NAMESIZE];
     char tester_ip[16];
     if (get_sys_default_if(test_if_name) == ERROR) {
-        TESTER_LOG(INFO, log_fp, "get system default interface ip addr failed");
+        TESTER_LOG(INFO, log_fp, 0, "get system default interface ip addr failed");
         return ERROR;
     }
     if (get_local_ip(tester_ip, test_if_name) == ERROR) {
-        TESTER_LOG(INFO, log_fp, "get system default interface ip addr failed");
+        TESTER_LOG(INFO, log_fp, 0, "get system default interface ip addr failed");
         return ERROR;
     }
-    TESTER_LOG(DBG, NULL, "use interface: %s, ip addr: %s", test_if_name, tester_ip);
+    TESTER_LOG(DBG, NULL, 0, "use interface: %s, ip addr: %s", test_if_name, tester_ip);
 
     *server_socket = socket(AF_INET, SOCK_STREAM, 0);
         
     if (setsockopt(*server_socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &(int){1}, sizeof(int)) < 0) {
-        TESTER_LOG(INFO, log_fp, "set socket option failed: %s", strerror(errno));
+        TESTER_LOG(INFO, log_fp, 0, "set socket option failed: %s", strerror(errno));
         close(*server_socket);
         return ERROR;
     }
@@ -53,7 +53,7 @@ STATUS init_sock(int *server_socket, FILE *log_fp)
 
     int listening = listen(*server_socket, 10);
     if (listening < 0) {
-        TESTER_LOG(INFO, log_fp, "socket server listens failed");
+        TESTER_LOG(INFO, log_fp, 0, "socket server listens failed");
         close(*server_socket);
         return ERROR;
     }
@@ -69,16 +69,16 @@ STATUS get_sys_default_if(char *default_if)
     STATUS ret = ERROR;
 
     if (if_name == NULL) {
-        TESTER_LOG(INFO, NULL, "malloc failed");
+        TESTER_LOG(INFO, NULL, 0, "malloc failed");
         return ERROR;
     }
     FILE *fp = fopen("/proc/net/route", "r");
     if (fp == NULL) {
-        TESTER_LOG(INFO, NULL, "fopen /proc/net/route failed: %s", strerror(errno));
+        TESTER_LOG(INFO, NULL, 0, "fopen /proc/net/route failed: %s", strerror(errno));
         return ERROR;
     }
     if (fscanf(fp, "%*[^\n]\n") < 0) {
-        TESTER_LOG(INFO, NULL, "fscanf /proc/net/route failed: %s", strerror(errno));
+        TESTER_LOG(INFO, NULL, 0, "fscanf /proc/net/route failed: %s", strerror(errno));
         fclose(fp);
         return ERROR;
     }
@@ -113,9 +113,9 @@ void *recv_req(void *arg)
 
     socklen_t len = sizeof(client_addr);
     while(1) {
-        TESTER_LOG(INFO, log_fp, "waiting for test request");
+        TESTER_LOG(INFO, log_fp, 0, "waiting for test request");
         client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &len);
-        TESTER_LOG(INFO, log_fp, "recv running test request");
+        TESTER_LOG(INFO, log_fp, 0, "recv running test request");
         thread_list_t *new_thread = (thread_list_t *)malloc(sizeof(thread_list_t));
         new_thread->sock = client_socket;
         new_thread->log_info.log_fp = thread_list_head->log_info.log_fp;
@@ -134,12 +134,12 @@ void *recv_cmd(void *arg)
         memset(buf, 0, 1024);
         int n = recv(client_socket, buf, 1024, 0);
         if (n == 0) {
-            TESTER_LOG(INFO, log_fp, "client closed\n");
+            TESTER_LOG(INFO, log_fp, 0, "client closed\n");
             close(client_socket);
             break;
         }
         else if (n < 0) {
-            TESTER_LOG(INFO, log_fp, "socket recv error");
+            TESTER_LOG(INFO, log_fp, 0, "socket recv error");
             close(client_socket);
             break;
         }
@@ -150,7 +150,7 @@ void *recv_cmd(void *arg)
             continue;
         }
         
-        TESTER_LOG(DBG, log_fp, "branch name = %s", test_info.branch_name);
+        TESTER_LOG(DBG, log_fp, 0, "branch name = %s", test_info.branch_name);
         tester_send2mailbox((U8 *)&test_info, sizeof(test_info));
     }
     free(this_thread);
@@ -175,7 +175,7 @@ STATUS parse_test_request(struct test_info *test_info, char buf[], int n, FILE *
     int ret = phr_parse_request((const char *)buf, n, (const char **)&method, &method_len, (const char **)&path, &path_len,
                              &minor_version, headers, &num_headers, 0);
     if (ret < 0) {
-        TESTER_LOG(DBG, NULL, "parse test request http header failed");
+        TESTER_LOG(DBG, NULL, 0, "parse test request http header failed");
         return ERROR;;
     }
     printf("method is %.*s\n", (int)method_len, method);

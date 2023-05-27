@@ -8,11 +8,11 @@ struct cfg_opt cfg_opt;
 
 void print_usage(char *argv)
 {
-    printf("Usage: %s [-dhls]\n", argv);
+    printf("Usage: %s [-dhlsc]\n", argv);
     printf("    -d        sets running in daemon mode to true, default is false\n");
     printf("    -h        show help message\n");
-    printf("    -l        set logfile path\n");
-    printf("    -s        set default exec script path\n");
+    printf("    -l        set logfile located directory\n");
+    printf("    -s        set custom script located directory\n");
     printf("    -c        set config file path\n");
 }
 
@@ -61,20 +61,14 @@ STATUS parse_cmd(int argc, char **argv, struct cmd_opt *options)
     return SUCCESS;
 }
 
-STATUS parse_config(const char *config_dirpath, const char *config_filename) 
+STATUS parse_config(const char *config_path) 
 {
     config_t cfg;
-    char config_filepath[PATH_MAX];
-
-    strncpy(config_filepath, config_dirpath, PATH_MAX-1);
-    config_filepath[PATH_MAX-1] = '\0';
-    strncat(config_filepath, config_filename, PATH_MAX-1);
-    config_filepath[PATH_MAX-1] = '\0';
 
     config_init(&cfg);
-    if(!config_read_file(&cfg, config_filepath)) {
-        TESTER_LOG(INFO, NULL, "read config file %s content error: %s:%d - %s", 
-                config_filepath, config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
+    if(!config_read_file(&cfg, config_path)) {
+        TESTER_LOG(INFO, NULL, 0, "read config file %s content error: %s:%d - %s", 
+                config_path, config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
         config_destroy(&cfg);
         return ERROR;
     }

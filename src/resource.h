@@ -4,7 +4,7 @@
 #include <common.h>
 #include "thread.h"
 
-struct pid_list *find_co_pid(pid_t parent_pid);
+struct pid_list *find_co_pid(pid_t parent_pid, TEST_TYPE test_type);
 void close_logfile(thread_list_t *target_thread);
 BOOL is_process_exist(pid_t pid);
 void kill_co_process(thread_list_t *target_thread);

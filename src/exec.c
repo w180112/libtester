@@ -107,7 +107,7 @@ TEST_TYPE check_test_type(char *test_type)
 {
     for(int i=0; i<total_test_types_count; i++) {
         if (strncmp(total_test_types[i], test_type, strlen(test_type)) == 0) {
-            TESTER_LOG(INFO, NULL, "test %s", test_type);
+            TESTER_LOG(INFO, NULL, i+1, "test %s", test_type);
             return i+1;
         }
     }
@@ -130,6 +130,7 @@ void tester_exec_cmd(thread_list_t *this_thread)
     const char *cmd = exec_cmd->cmd;
     const char *result_check = exec_cmd->result_check;
     FILE *log_fp = this_thread->log_info.log_fp;
+    TEST_TYPE test_type = this_thread->test_type;
     char cmd_stdout[65536];
     memset(cmd_stdout, 0, 65536);
     FILE *cmd_fp = NULL;
@@ -139,11 +140,11 @@ void tester_exec_cmd(thread_list_t *this_thread)
 
     this_thread->exec_cmd.result = ERROR;
 
-    TESTER_LOG(INFO, log_fp, "test [%s] command", cmd);
-    TESTER_LOG(INFO, log_fp, "expected result is [%s] in %u seconds", result_check, timeout_sec);
+    TESTER_LOG(INFO, log_fp, test_type, "test [%s] command", cmd);
+    TESTER_LOG(INFO, log_fp, test_type, "expected result is [%s] in %u seconds", result_check, timeout_sec);
 
     pid = popen2(cmd, NULL, &out_fp);
-    TESTER_LOG(DBG, log_fp, "main exec pid = %d", pid);
+    TESTER_LOG(DBG, log_fp, test_type, "main exec pid = %d", pid);
 
     
     cmd_fp = fdopen(out_fp, "r");
@@ -152,9 +153,9 @@ void tester_exec_cmd(thread_list_t *this_thread)
     exec_cmd->exec_pid = pid;
 
     sleep(1);
-    this_thread->pid_list = find_co_pid(this_thread->exec_cmd.exec_pid);
+    this_thread->pid_list = find_co_pid(this_thread->exec_cmd.exec_pid, test_type);
     OSTMR_StartTmr(q_key, this_thread, timeout_sec*1000000, "tester:", 0);
-    TESTER_LOG(DBG, log_fp, "all co pids are found");
+    TESTER_LOG(DBG, log_fp, test_type, "all co pids are found");
 
     U32 total_len = 0;
     
@@ -172,12 +173,12 @@ void tester_exec_cmd(thread_list_t *this_thread)
             fflush(log_fp);
         }
         if (strstr(cmd_stdout, result_check) != NULL) {
-            TESTER_LOG(DBG, log_fp, "cmd finished");
+            TESTER_LOG(DBG, log_fp, test_type, "cmd finished");
             this_thread->exec_cmd.result = SUCCESS;
             break;
         }
     }
-    TESTER_LOG(DBG, log_fp, "fwrite %u bytes to log file", total_len);
+    TESTER_LOG(DBG, log_fp, test_type, "fwrite %u bytes to log file", total_len);
     if (cmd_fp != NULL) {
         fclose(cmd_fp);
         cmd_fp = NULL;
@@ -200,19 +201,20 @@ void *get_cmd_output(void *arg)
 {
     test_obj_t *test_obj = (test_obj_t *)arg;
     thread_list_t *this_thread = test_obj->base_thread;
+    TEST_TYPE test_type = this_thread->test_type;
 
     if (test_obj->init_func(this_thread) == ERROR) {
-        TESTER_LOG(INFO, this_thread->log_info.log_fp, "init test failed");
+        TESTER_LOG(INFO, this_thread->log_info.log_fp, test_type, "init test failed");
         drv_xmit((U8 *)http_fail_header, strlen(http_fail_header)+1, this_thread->sock);
         goto end;
     }
     if (test_obj->test_func(this_thread) == ERROR) {
-        TESTER_LOG(INFO, this_thread->log_info.log_fp, "test failed");
+        TESTER_LOG(INFO, this_thread->log_info.log_fp, test_type, "test failed");
         drv_xmit((U8 *)http_fail_header, strlen(http_fail_header)+1, this_thread->sock);
         goto end;
     }
 
-    TESTER_LOG(INFO, this_thread->log_info.log_fp, "test succeed");
+    TESTER_LOG(INFO, this_thread->log_info.log_fp, test_type, "test succeed");
     drv_xmit((U8 *)http_ok_header, strlen(http_ok_header)+1, this_thread->sock);
 end:
     close_logfile(this_thread);
@@ -221,8 +223,9 @@ end:
     pthread_exit(NULL);
 }
 
-FILE *create_logfile(char *test_type, char cwd[], char logfile_proc_path[])
+FILE *create_logfile(TEST_TYPE test_type, char cwd[], char logfile_proc_path[])
 {
+    char *test_type_str = total_test_types[test_type-1];
     struct timeval tv;
     char pwd[PATH_MAX];
     memset(pwd, 0, PATH_MAX);
@@ -234,15 +237,15 @@ FILE *create_logfile(char *test_type, char cwd[], char logfile_proc_path[])
     struct tm *time_format = localtime(&t);
 
     char logfile_name[192];
-    sprintf(logfile_name, "/%s_%d-%d-%d_%d-%d-%d_%ld.log", test_type, time_format->tm_year+1900, 
+    sprintf(logfile_name, "/%s_%d-%d-%d_%d-%d-%d_%ld.log", test_type_str, time_format->tm_year+1900, 
         time_format->tm_mon+1, time_format->tm_mday, time_format->tm_hour, time_format->tm_min, time_format->tm_sec, tv.tv_usec);
     strncat(pwd, logfile_name, strlen(logfile_name)+1);
     FILE *log_fp = fopen(pwd, "w");
     if (log_fp == NULL) {
-        TESTER_LOG(INFO, log_fp, "create logfile [%s] failed: %s", pwd, strerror(errno));
+        TESTER_LOG(INFO, log_fp, test_type, "create logfile [%s] failed: %s", pwd, strerror(errno));
         return NULL;
     }
-    TESTER_LOG(DBG, log_fp, "create log file [%s] for test", pwd);
+    TESTER_LOG(DBG, log_fp, test_type, "create log file [%s] for test", pwd);
 
     pid_t tester_pid = getpid();
     char proc_path[PROC_PATH_LEN];
@@ -259,17 +262,17 @@ FILE *create_logfile(char *test_type, char cwd[], char logfile_proc_path[])
                 continue;
             memset(proc_path, 0, PROC_PATH_LEN);
             if (snprintf(proc_path, PROC_PATH_LEN-1, "/proc/%d/fd/%s", tester_pid, dir->d_name) < 0 ) {
-                TESTER_LOG(INFO, log_fp, "get proc fd path %s with snprintf failed", proc_path);
+                TESTER_LOG(INFO, log_fp, test_type, "get proc fd path %s with snprintf failed", proc_path);
                 continue;
             }
             proc_path[PROC_PATH_LEN-1] = '\0';
             int path_size = readlink(proc_path, symlink_real_path, PATH_MAX-1);
             if (path_size == -1) {
-                TESTER_LOG(INFO, log_fp, "read proc fd symlink %s failed", proc_path);
+                TESTER_LOG(INFO, log_fp, test_type, "read proc fd symlink %s failed", proc_path);
                 continue;
             }
             symlink_real_path[path_size] = '\0';
-            if (strstr(symlink_real_path, test_type) != NULL) {
+            if (strstr(symlink_real_path, test_type_str) != NULL) {
                 strncpy(logfile_proc_path, proc_path, LOG_PATH_LEN-1);
                 logfile_proc_path[LOG_PATH_LEN-1] = '\0';
                 break;
@@ -277,12 +280,12 @@ FILE *create_logfile(char *test_type, char cwd[], char logfile_proc_path[])
         }
         closedir(d);
         if (strlen(logfile_proc_path) == 0) {
-            TESTER_LOG(INFO, log_fp, "can't find %s file symlink in /proc/%d/fd/", logfile_name, tester_pid);
+            TESTER_LOG(INFO, log_fp, test_type, "can't find %s file symlink in /proc/%d/fd/", logfile_name, tester_pid);
             return NULL;
         }
     }
     else {
-        TESTER_LOG(INFO, log_fp, "opendir() failed: %s", strerror(errno));
+        TESTER_LOG(INFO, log_fp, test_type, "opendir() failed: %s", strerror(errno));
         return NULL;
     }
 
@@ -299,13 +302,13 @@ STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_pat
     if (test_type == -1)
         goto err;
 
-    FILE *log_fp = create_logfile(test_info.test_type, logfile_path, logfile_proc_path);
+    FILE *log_fp = create_logfile(test_type, logfile_path, logfile_proc_path);
     if (log_fp == NULL)
         goto err;
     
     if (is_test_able_rerun == FALSE) {
         if (is_test_running(test_type) == TRUE) {
-            TESTER_LOG(INFO, log_fp, "test [%s] is still running", test_info.test_type);
+            TESTER_LOG(INFO, log_fp, test_type, "test [%s] is still running", test_info.test_type);
             http_result_code = http_503_header;
             goto err;
         }
@@ -339,7 +342,7 @@ STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_pat
         pthread_create(&test_thread->thread_id, NULL, get_cmd_output, (void *restrict)&test_obj);
     }
     else {
-        TESTER_LOG(INFO, log_fp, "generate test cmd object failed");
+        TESTER_LOG(INFO, log_fp, test_type, "generate test cmd object failed");
         goto err;
     }
 

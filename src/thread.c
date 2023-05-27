@@ -106,11 +106,13 @@ void get_all_timeout_threads_from_list(thread_list_t *timeout_thread, thread_lis
 
 void remove_all_threads_in_list(thread_list_t *del_list)
 {
+    TEST_TYPE test_type = del_list->test_type;
+
     for(thread_list_t *del_cur=del_list; del_cur!=NULL;) {
         thread_list_t *del_node = del_cur;
         del_cur = del_cur->next;
         if (del_node->exec_cmd.exec_pid != 0 && is_process_exist(del_node->exec_cmd.exec_pid)) {
-            TESTER_LOG(DBG, NULL, "kill pid = %d", del_node->exec_cmd.exec_pid);
+            TESTER_LOG(DBG, NULL, test_type, "kill pid = %d", del_node->exec_cmd.exec_pid);
             kill(del_node->exec_cmd.exec_pid, SIGKILL);
         }
         kill_co_process(del_node);

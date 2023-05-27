@@ -31,8 +31,9 @@ build-libs: $(OBJ)
 install:
 	mkdir -p /var/log/libtester
 	mkdir -p /etc/libtester
-	mkdir -p /usr/local/include/tester
-	cp src/*.h /usr/local/include/tester/
+	mkdir -p /usr/local/include/libtester
+	mkdir -p /usr/local/bin/libtester
+	cp src/*.h /usr/local/include/libtester/
 	cp config.cfg /etc/libtester/config.cfg
 	cp bin/libtester.so /usr/local/lib/libtester.so
 	cp bin/libtester.a /usr/local/lib/libtester.a
@@ -58,6 +59,7 @@ clean:
 uninstall:
 	rm -rf /var/log/libtester
 	rm -rf /etc/libtester
-	rm -rf /usr/local/include/tester
+	rm -rf /usr/local/include/libtester
+	rm -rf /usr/local/bin/libtester
 	rm -f /usr/local/lib/libtester.so
 	rm -f /usr/local/lib/libtester.a

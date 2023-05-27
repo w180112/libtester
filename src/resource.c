@@ -60,7 +60,7 @@ STATUS insert_co_pid_2_list(struct pid_list **co_pid_list, struct pid_list *new_
  * 
  * @retval All offspring processes in a linked list
 */
-struct pid_list *find_co_pid(pid_t parent_pid)
+struct pid_list *find_co_pid(pid_t parent_pid, TEST_TYPE test_type)
 {
     const char *proc_dir = "/proc";
     const char *pid_stat_path = "/proc/%s/stat";
@@ -69,7 +69,7 @@ struct pid_list *find_co_pid(pid_t parent_pid)
     DIR *d;
     struct dirent *dir;
 
-    TESTER_LOG(DBG, NULL, "looking for pid %d's co pid", parent_pid);
+    TESTER_LOG(DBG, NULL, test_type, "looking for pid %d's co pid", parent_pid);
     d = opendir(proc_dir);
     if (d) {
         while ((dir = readdir(d)) != NULL) {
@@ -86,7 +86,7 @@ struct pid_list *find_co_pid(pid_t parent_pid)
             fscanf(fp, "%d %s %c %d %d", &pid, comm, &state, &ppid, &gpid);
             fclose(fp);
             if (ppid == parent_pid) {
-                TESTER_LOG(DBG, NULL, "find co pids = %d, pid name is: %s", pid, comm);
+                TESTER_LOG(DBG, NULL, test_type, "find co pids = %d, pid name is: %s", pid, comm);
                 struct pid_list *new_pid = (struct pid_list *)malloc(sizeof(struct pid_list));
                 struct pid_list *tmp_pid = (struct pid_list *)malloc(sizeof(struct pid_list));
                 if (new_pid == NULL)
@@ -115,14 +115,14 @@ struct pid_list *find_co_pid(pid_t parent_pid)
         struct pid_list *cur = parent_co_pids;
         struct pid_list *prev = NULL;
         while(cur!=NULL) {
-            struct pid_list *child_co_pids = find_co_pid(cur->pid);
+            struct pid_list *child_co_pids = find_co_pid(cur->pid, test_type);
             for(struct pid_list *tmp=child_co_pids; tmp!=NULL;) {
                 struct pid_list *new_pid_node = (struct pid_list *)malloc(sizeof(struct pid_list));
                 new_pid_node->pid = tmp->pid;
                 new_pid_node->next = NULL;
-                TESTER_LOG(DBG, NULL, "inserting pid %d to list", tmp->pid);
+                TESTER_LOG(DBG, NULL, test_type, "inserting pid %d to list", tmp->pid);
                 if (insert_co_pid_2_list(&co_pid_list, new_pid_node) == ERROR)
-                    TESTER_LOG(DBG, NULL, "insert pid %d to list failed", tmp->pid);
+                    TESTER_LOG(DBG, NULL, test_type, "insert pid %d to list failed", tmp->pid);
                 struct pid_list *tmp_prev = tmp;
                 tmp=tmp->next;
                 free(tmp_prev);
@@ -131,7 +131,7 @@ struct pid_list *find_co_pid(pid_t parent_pid)
             cur = cur->next;
             free(prev);
         }
-        TESTER_LOG(DBG, NULL, "finish finding pid %d's co pid", parent_pid);
+        TESTER_LOG(DBG, NULL, test_type, "finish finding pid %d's co pid", parent_pid);
 
         return co_pid_list;
     }
@@ -162,11 +162,12 @@ BOOL is_process_exist(pid_t pid)
 void kill_co_process(thread_list_t *target_thread)
 {
     struct pid_list *prev = NULL;
+    TEST_TYPE test_type = target_thread->test_type;
     for(struct pid_list *cur=target_thread->pid_list; cur!=NULL;) {
         if (cur->pid == 0)
             continue;
         if (is_process_exist(cur->pid)) {
-            TESTER_LOG(DBG, NULL, "kill co pids = %d", cur->pid);
+            TESTER_LOG(DBG, NULL, test_type, "kill co pids = %d", cur->pid);
             kill(cur->pid, SIGKILL);
         }
         prev = cur;
