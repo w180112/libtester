@@ -82,7 +82,7 @@ void register_signal()
  * libtester_init: 
  *
  **************************************************************/
-int libtester_init(tIPC_ID *q_key, char *logfile_path, FILE **log_fp)
+STATUS libtester_init(tIPC_ID *q_key, char *logfile_path, FILE **log_fp)
 {
 	char pwd[PATH_MAX];
     char *logfile_name = "/libtester.log";
@@ -91,15 +91,24 @@ int libtester_init(tIPC_ID *q_key, char *logfile_path, FILE **log_fp)
 
     *log_fp = fopen(strncat(pwd, logfile_name, strlen(logfile_name)+1), "w");
     if (*log_fp == NULL) {
-        TESTER_LOG(INFO, NULL, 0, "open tester logfile failed: %s", strerror(errno));
+        TESTER_LOG(INFO, NULL, 0, "open libtester logfile failed: %s", strerror(errno));
         return ERROR;
     }
 
-	libtester_ipc_init(*log_fp);
+	if (libtester_ipc_init(*log_fp) == ERROR) {
+		TESTER_LOG(INFO, *log_fp, 0, "ipc init failed: %s", strerror(errno));
+		fclose(*log_fp);
+		return ERROR;
+	}
     *q_key = libtester_qid;
     tmr_pid = tmrInit();
+	if (tmr_pid < 0) {
+		TESTER_LOG(INFO, *log_fp, 0, "timer init failed: %s", strerror(errno));
+		fclose(*log_fp);
+		return ERROR;
+	}
 	register_signal();
 	TESTER_LOG(INFO, *log_fp, 0, "%s", "============ tester init successfully ==============");
 
-	return 0;
+	return SUCCESS;
 }

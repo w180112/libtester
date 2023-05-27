@@ -4,7 +4,7 @@
 #include <common.h>
 
 extern STATUS libtester_ipc_init(void);
-extern int libtester_init(tIPC_ID *q_key, char *logfile_path, FILE **log_fp);
+extern STATUS libtester_init(tIPC_ID *q_key, char *logfile_path, FILE **log_fp);
 extern void libtester_bye(int signal_num);
 extern void libtester_clean();
 

@@ -63,8 +63,8 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
     TESTER_LOG(INFO, NULL, 0, "loglvl is %s", loglvl2str(tester_dbg_flag));
 
     FILE *log_fp;
-	if (libtester_init(&q_key, options.service_logfile_path, &log_fp) < 0) {
-        fclose(log_fp);
+	if (libtester_init(&q_key, options.service_logfile_path, &log_fp) == ERROR) {
+        TESTER_LOG(INFO, log_fp, 0, "libtester init failed");
 		return ERROR;
     }
 
