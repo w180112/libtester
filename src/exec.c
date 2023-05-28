@@ -219,7 +219,7 @@ void *get_cmd_output(void *arg)
 end:
     close_logfile(this_thread);
     if (this_thread != NULL)
-        remove_thread_id_from_list(this_thread);
+        remove_thread_id_from_list(&this_thread);
     pthread_exit(NULL);
 }
 

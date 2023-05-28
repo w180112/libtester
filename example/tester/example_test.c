@@ -42,7 +42,7 @@ STATUS start_test(thread_list_t *this_thread)
     FILE *log_fp = this_thread->log_info.log_fp;
     TEST_TYPE test_type = this_thread->test_type;
 
-    struct thread_list *run_thread = tester_new_cmd(*this_thread, "go run /root/replace-docx-field/cmd/main.go -p /root/replace-docx-field/template/*", "443", 60);
+    struct thread_list *run_thread = tester_new_cmd(*this_thread, "/usr/local/go/bin/go run /root/replace-docx-field/cmd/main.go -p /root/replace-docx-field/template/*", "443", 60);
     if (run_thread == NULL) {
         TESTER_LOG(INFO, log_fp, test_type, "clean failed");
         return ERROR;

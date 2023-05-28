@@ -48,7 +48,7 @@ BOOL is_thread_in_list_lock(thread_list_t *thread)
     return ret;
 }
 
-void remove_thread_id_from_list(thread_list_t *rm_thread)
+void remove_thread_id_from_list(thread_list_t **rm_thread)
 {   
     thread_list_t *cur;
 
@@ -57,11 +57,15 @@ void remove_thread_id_from_list(thread_list_t *rm_thread)
     while(1) {
         if (cur == NULL || cur->next == NULL)
             break;
-        if (cur->next->exec_cmd.exec_pid == rm_thread->exec_cmd.exec_pid && \
-            uuid_compare(cur->next->test_uuid, rm_thread->test_uuid) == 0) {
+        if (cur->next->exec_cmd.exec_pid == (*rm_thread)->exec_cmd.exec_pid && \
+            uuid_compare(cur->next->test_uuid, (*rm_thread)->test_uuid) == 0) {
             cur->next = cur->next->next;
-            kill_co_process(rm_thread);
-            free(rm_thread);
+            if ((*rm_thread)->exec_cmd.exec_pid != 0 && is_process_exist((*rm_thread)->exec_cmd.exec_pid))
+                kill((*rm_thread)->exec_cmd.exec_pid, SIGKILL);
+            kill_co_process(*rm_thread);
+            close((*rm_thread)->exec_cmd.out_fp);
+            free(*rm_thread);
+            *rm_thread = NULL;
         }
         cur=cur->next;
     }
@@ -106,18 +110,15 @@ void get_all_timeout_threads_from_list(thread_list_t *timeout_thread, thread_lis
 
 void remove_all_threads_in_list(thread_list_t *del_list)
 {
-    TEST_TYPE test_type = del_list->test_type;
-
     for(thread_list_t *del_cur=del_list; del_cur!=NULL;) {
         thread_list_t *del_node = del_cur;
         del_cur = del_cur->next;
-        if (del_node->exec_cmd.exec_pid != 0 && is_process_exist(del_node->exec_cmd.exec_pid)) {
-            TESTER_LOG(DBG, NULL, test_type, "kill pid = %d", del_node->exec_cmd.exec_pid);
+        if (del_node->exec_cmd.exec_pid != 0 && is_process_exist(del_node->exec_cmd.exec_pid))
             kill(del_node->exec_cmd.exec_pid, SIGKILL);
-        }
         kill_co_process(del_node);
         close(del_node->exec_cmd.out_fp);
-        pthread_cancel(del_node->thread_id);
+        if (del_node->thread_id != 0) // for unit test check, otherwise thread_id is always meaningful
+            pthread_cancel(del_node->thread_id);
         free(del_node);
     }
 }

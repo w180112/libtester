@@ -60,7 +60,7 @@ void add_thread_id_to_list(thread_list_t *new_thread);
 void add_thread_id_to_list_lock(thread_list_t *new_thread);
 BOOL is_thread_in_list(thread_list_t *thread);
 BOOL is_thread_in_list_lock(thread_list_t *thread);
-void remove_thread_id_from_list(thread_list_t *rm_thread);
+void remove_thread_id_from_list(thread_list_t **rm_thread);
 BOOL is_test_running(TEST_TYPE test_type);
 void get_all_timeout_threads_from_list(thread_list_t *timeout_thread, thread_list_t **timeout_list);
 void remove_all_threads_in_list(thread_list_t *del_list);

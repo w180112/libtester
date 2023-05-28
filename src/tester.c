@@ -169,7 +169,7 @@ void tester_delete_cmd(struct thread_list *thread)
     if (thread == NULL)
         return;
     if (is_thread_in_list_lock(thread) == TRUE) {
-        remove_thread_id_from_list(thread);
+        remove_thread_id_from_list(&thread);
         return;
     }
     kill_co_process(thread);
@@ -187,8 +187,6 @@ void tester_stop_cmd(struct thread_list *thread)
 {
     if (thread == NULL)
         return;
-    if (is_process_exist(thread->exec_cmd.exec_pid))
-        kill(thread->exec_cmd.exec_pid, SIGKILL);
     pthread_cancel(thread->thread_id);
     tester_stop_cmd_timer(thread);
     tester_delete_cmd(thread);
