@@ -17,7 +17,7 @@ extern BOOL is_test_able_rerun;
 extern char **total_test_types;
 extern TEST_TYPE total_test_types_count;
 
-STATUS tester_start(int argc, char **argv, char **test_types, int test_type_count, BOOL allow_test_able_rerun, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread))
+STATUS tester_start(int argc, char **argv, char **test_types, int test_type_count, BOOL allow_test_able_rerun, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread), STATUS(* timeout_func)(thread_list_t *this_thread))
 {
     tTESTER_MBX		*mail;
 	tMBUF   		mbuf;
@@ -123,7 +123,7 @@ STATUS tester_start(int argc, char **argv, char **test_types, int test_type_coun
 		case IPC_EV_TYPE_DRV:
 			mail = (tTESTER_MBX *)mbuf.mtext;
             struct test_info test_info = *(struct test_info *)mail->refp;
-            init_cmd(test_info, options.service_logfile_path, options.default_script_path, init_func, test_func);
+            init_cmd(test_info, options.service_logfile_path, options.default_script_path, init_func, test_func, timeout_func);
 			break;
 		default:
 		    ;
@@ -213,7 +213,7 @@ STATUS tester_get_test_result(struct thread_list *thread)
  * 
  * @retval The cmd objest
 */
-struct thread_list *tester_new_cmd(struct thread_list base_thread, const char *cmd, const char *result_check, U16 timeout_sec)
+struct thread_list *tester_new_cmd(struct thread_list base_thread, const char *cmd, const char *result_check, BOOL print_stdout, U16 timeout_sec)
 {
     TEST_TYPE test_type = base_thread.test_type;
 
@@ -243,6 +243,7 @@ struct thread_list *tester_new_cmd(struct thread_list base_thread, const char *c
     new_thread->branch_name[sizeof(new_thread->branch_name)-1] = '\0';
 
     struct exec_cmd_info exec_cmd = {
+        .print_stdout = print_stdout,
         .timeout_sec = timeout_sec,
     };
     if (cmd != NULL) {

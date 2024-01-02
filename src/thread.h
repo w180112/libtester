@@ -15,6 +15,7 @@ struct exec_cmd_info{
     int out_fp;
     U16 timeout_sec;
     STATUS result;
+    BOOL print_stdout;
 };
 
 struct pid_list {

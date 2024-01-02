@@ -36,7 +36,6 @@ BOOL is_thread_in_list(thread_list_t *thread)
     return FALSE;
 }
 
-
 BOOL is_thread_in_list_lock(thread_list_t *thread)
 {
     BOOL ret = FALSE;

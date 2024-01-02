@@ -27,7 +27,8 @@ void libtester_bye(int signal_num, siginfo_t *info, void *context)
 
 	TESTER_LOG(INFO, NULL, 0, "recv signal %d, code %d", signal_num, info->si_code);
     libtester_clean();
-    TESTER_LOG(INFO, NULL, 0, "bye!");
+	killpg(getpgrp(), SIGKILL);
+	TESTER_LOG(INFO, NULL, 0, "bye!");
 	_exit(0);
 }
 

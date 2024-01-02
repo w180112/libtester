@@ -76,12 +76,37 @@ pid_t popen2(const char *command, int *infp, int *outfp)
     return pid;
 }
 
-int pclose2(pid_t pid) 
+int pclose2(pid_t pid)
 {
     int internal_stat;
     waitpid(pid, &internal_stat, 0);
 
     return WEXITSTATUS(internal_stat);
+}
+
+BOOL is_process_running(pid_t pid, int *status)
+{
+    for(int i=0; i<10; i++) { // if process is still running, wait at most 10 seconds
+        pid_t ret = waitpid(pid, status, WNOHANG);
+
+        if (ret == -1) {
+            if (ECHILD == errno) {
+                TESTER_LOG(INFO, NULL, 0, "waitpid() for child process %d warning %s", pid, strerror(errno));
+                return FALSE;
+            } 
+            TESTER_LOG(INFO, NULL, 0, "waitpid() for child process %d failed %s", pid, strerror(errno));
+            return TRUE;
+        } 
+        else if (ret == 0) {
+            TESTER_LOG(INFO, NULL, 0, "child process %d is still running", pid);
+        } 
+        else if (ret == pid) {
+            return FALSE;
+        }
+        sleep(1);
+    }
+
+    return TRUE;
 }
 
 char *trim_string(char *str)
@@ -141,7 +166,7 @@ void tester_exec_cmd(thread_list_t *this_thread)
     this_thread->exec_cmd.result = ERROR;
 
     TESTER_LOG(INFO, log_fp, test_type, "test [%s] command", cmd);
-    TESTER_LOG(INFO, log_fp, test_type, "expected result is [%s] in %u seconds", result_check, timeout_sec);
+    TESTER_LOG(INFO, log_fp, test_type, "expected stdout result is [%s] in %u seconds", result_check, timeout_sec);
 
     pid = popen2(cmd, NULL, &out_fp);
     TESTER_LOG(DBG, log_fp, test_type, "main exec pid = %d", pid);
@@ -158,33 +183,59 @@ void tester_exec_cmd(thread_list_t *this_thread)
     TESTER_LOG(DBG, log_fp, test_type, "all co pids are found");
 
     U32 total_len = 0;
+    BOOL is_cmp_stdout = TRUE, is_stdout_correct = FALSE, is_exit_code_0 = FALSE;
+    if (strlen(result_check) <= 0) {
+        is_stdout_correct = TRUE;
+        is_cmp_stdout = FALSE;
+    }
     
     while (1) {
         if (cmd_fp == NULL || fgets(cmd_stdout, sizeof(cmd_stdout), cmd_fp) == NULL) {
             break;
         }
-        if (strlen(result_check) <= 0) {
+
+        if (this_thread->exec_cmd.print_stdout == TRUE) {
+            printf("res: %s", cmd_stdout);
+            total_len += strlen(cmd_stdout);
+            if (log_fp != NULL) {
+                fwrite(cmd_stdout, sizeof(char), strlen(cmd_stdout), log_fp);
+                fflush(log_fp);
+            }
+        }
+        
+        if (is_cmp_stdout == FALSE)
             continue;
-        }
-        printf("res: %s", cmd_stdout);
-        total_len += strlen(cmd_stdout);
-        if (log_fp != NULL) {
-            fwrite(cmd_stdout, sizeof(char), strlen(cmd_stdout), log_fp);
-            fflush(log_fp);
-        }
+
         if (strstr(cmd_stdout, result_check) != NULL) {
             TESTER_LOG(DBG, log_fp, test_type, "cmd finished");
-            this_thread->exec_cmd.result = SUCCESS;
+            is_stdout_correct = TRUE;
             break;
         }
     }
-    TESTER_LOG(DBG, log_fp, test_type, "fwrite %u bytes to log file", total_len);
+    //TESTER_LOG(DBG, log_fp, test_type, "fwrite %u bytes to log file", total_len);
     if (cmd_fp != NULL) {
         fclose(cmd_fp);
         cmd_fp = NULL;
     }
     close(out_fp);
-    kill(pid, SIGKILL);
+
+    int cmd_status;
+    if (is_process_running(pid, &cmd_status) == FALSE) {
+        is_exit_code_0 = TRUE;
+        if (WIFEXITED(cmd_status) && WEXITSTATUS(cmd_status) != 0) {
+            is_exit_code_0 = FALSE;
+            printf("Child exited with RC = %d\n", WEXITSTATUS(cmd_status));
+        }
+        if (WIFSIGNALED(cmd_status)) {
+            is_exit_code_0 = FALSE;
+            printf("Child exited via signal %d\n",WTERMSIG(cmd_status));
+        }
+    }
+    else {
+        TESTER_LOG(INFO, log_fp, test_type, "kill cmd process %d", pid);
+        kill(pid, SIGKILL);
+    }
+    this_thread->exec_cmd.result = is_stdout_correct == TRUE && is_exit_code_0 == TRUE ? SUCCESS : ERROR;
 
     OSTMR_StopXtmr(this_thread, 0);
 }
@@ -292,31 +343,30 @@ FILE *create_logfile(TEST_TYPE test_type, char cwd[], char logfile_proc_path[])
     return log_fp;
 }
 
-STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_path[], STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread))
+STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_path[], STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread), STATUS(* timeout_func)(thread_list_t *this_thread))
 {
     char logfile_proc_path[LOG_PATH_LEN];
     char *http_result_code = http_fail_header;
     test_obj_t test_obj;
+    FILE *log_fp = NULL;
 
     TEST_TYPE test_type = check_test_type(test_info.test_type);
     if (test_type == -1)
         goto err;
 
-    FILE *log_fp = create_logfile(test_type, logfile_path, logfile_proc_path);
+    log_fp = create_logfile(test_type, logfile_path, logfile_proc_path);
     if (log_fp == NULL)
         goto err;
-    
-    if (is_test_able_rerun == FALSE) {
-        if (is_test_running(test_type) == TRUE) {
-            TESTER_LOG(INFO, log_fp, test_type, "test [%s] is still running", test_info.test_type);
-            http_result_code = http_503_header;
-            goto err;
-        }
+
+    if (is_test_able_rerun == FALSE && is_test_running(test_type) == TRUE) {
+        TESTER_LOG(INFO, log_fp, test_type, "test [%s] is still running", test_info.test_type);
+        http_result_code = http_503_header;
+        goto err;
     }
 
     test_obj.init_func = init_func;
     test_obj.test_func = test_func;
-    test_obj.timeout_func = NULL;
+    test_obj.timeout_func = timeout_func;
 
     /* create an empty cmd obj */
     struct log_info log_info;
