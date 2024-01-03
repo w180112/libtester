@@ -6,29 +6,29 @@
 #include "resource.h"
 #include "dbg.h"
 
-thread_list_t *thread_list_head;
+struct thread_list *thread_list_head;
 pthread_mutex_t thread_list_lock;
 
-extern void kill_co_process(thread_list_t *target_thread);
+extern void kill_co_process(struct thread_list *target_thread);
 
-void add_thread_id_to_list(thread_list_t *new_thread)
+void add_thread_id_to_list(struct thread_list *new_thread)
 {
-    thread_list_t *cur;
+    struct thread_list *cur;
 
     for(cur=thread_list_head; cur!=NULL&&cur->next!=NULL; cur=cur->next);
     cur->next = new_thread;
 }
 
-void add_thread_id_to_list_lock(thread_list_t *new_thread)
+void add_thread_id_to_list_lock(struct thread_list *new_thread)
 {
     pthread_mutex_lock(&thread_list_lock);
     add_thread_id_to_list(new_thread);
     pthread_mutex_unlock(&thread_list_lock);
 }
 
-BOOL is_thread_in_list(thread_list_t *thread)
+BOOL is_thread_in_list(struct thread_list *thread)
 {
-    for(thread_list_t *cur=thread_list_head; cur!=NULL; cur=cur->next) {
+    for(struct thread_list *cur=thread_list_head; cur!=NULL; cur=cur->next) {
         if (cur == thread)
             return TRUE;
     }
@@ -36,7 +36,7 @@ BOOL is_thread_in_list(thread_list_t *thread)
     return FALSE;
 }
 
-BOOL is_thread_in_list_lock(thread_list_t *thread)
+BOOL is_thread_in_list_lock(struct thread_list *thread)
 {
     BOOL ret = FALSE;
 
@@ -47,9 +47,9 @@ BOOL is_thread_in_list_lock(thread_list_t *thread)
     return ret;
 }
 
-void remove_thread_id_from_list(thread_list_t **rm_thread)
+void remove_thread_id_from_list(struct thread_list **rm_thread)
 {   
-    thread_list_t *cur;
+    struct thread_list *cur;
 
     pthread_mutex_lock(&thread_list_lock);
     cur = thread_list_head;
@@ -76,7 +76,7 @@ BOOL is_test_running(TEST_TYPE test_type)
     BOOL is_running = FALSE;
 
     pthread_mutex_lock(&thread_list_lock);
-    for(thread_list_t *cur=thread_list_head; cur!=NULL; cur=cur->next) {
+    for(struct thread_list *cur=thread_list_head; cur!=NULL; cur=cur->next) {
         if (cur->test_type == test_type) {
             is_running = TRUE;
             break;
@@ -87,9 +87,9 @@ BOOL is_test_running(TEST_TYPE test_type)
     return is_running;
 }
 
-void get_all_timeout_threads_from_list(thread_list_t *timeout_thread, thread_list_t **timeout_list)
+void get_all_timeout_threads_from_list(struct thread_list *timeout_thread, struct thread_list **timeout_list)
 {
-    thread_list_t *next = thread_list_head, *cur = NULL, *prev = NULL;
+    struct thread_list *next = thread_list_head, *cur = NULL, *prev = NULL;
     uuid_t timeout_uuid;
     uuid_copy(timeout_uuid, timeout_thread->test_uuid);
 
@@ -107,10 +107,10 @@ void get_all_timeout_threads_from_list(thread_list_t *timeout_thread, thread_lis
     }
 }
 
-void remove_all_threads_in_list(thread_list_t *del_list)
+void remove_all_threads_in_list(struct thread_list *del_list)
 {
-    for(thread_list_t *del_cur=del_list; del_cur!=NULL;) {
-        thread_list_t *del_node = del_cur;
+    for(struct thread_list *del_cur=del_list; del_cur!=NULL;) {
+        struct thread_list *del_node = del_cur;
         del_cur = del_cur->next;
         if (del_node->exec_cmd.exec_pid != 0 && is_process_exist(del_node->exec_cmd.exec_pid))
             kill(del_node->exec_cmd.exec_pid, SIGKILL);
@@ -122,15 +122,15 @@ void remove_all_threads_in_list(thread_list_t *del_list)
     }
 }
 
-void remove_all_timeout_threads_from_list(thread_list_t *timeout_thread)
+void remove_all_timeout_threads_from_list(struct thread_list *timeout_thread)
 {
-    thread_list_t *timeout_list = NULL;
+    struct thread_list *timeout_list = NULL;
 
     get_all_timeout_threads_from_list(timeout_thread, &timeout_list);
     remove_all_threads_in_list(timeout_list);
 }
 
-void remove_all_timeout_threads_from_list_lock(thread_list_t *timeout_thread)
+void remove_all_timeout_threads_from_list_lock(struct thread_list *timeout_thread)
 {   
     pthread_mutex_lock(&thread_list_lock);
     remove_all_timeout_threads_from_list(timeout_thread);

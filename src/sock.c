@@ -2,7 +2,6 @@
 #include <errno.h>
 #include <picohttpparser.h>
 #include <linux/route.h>
-#include "tester.h"
 #include "thread.h"
 #include "init.h"
 #include "parse.h"
@@ -116,7 +115,7 @@ void *recv_req(void *arg)
         TESTER_LOG(INFO, log_fp, 0, "waiting for test request");
         client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &len);
         TESTER_LOG(INFO, log_fp, 0, "recv running test request");
-        thread_list_t *new_thread = (thread_list_t *)malloc(sizeof(thread_list_t));
+        struct thread_list *new_thread = (struct thread_list *)malloc(sizeof(struct thread_list));
         new_thread->sock = client_socket;
         new_thread->log_info.log_fp = thread_list_head->log_info.log_fp;
         new_thread->test_type = -1;
@@ -126,7 +125,7 @@ void *recv_req(void *arg)
 
 void *recv_cmd(void *arg)
 {
-    thread_list_t *this_thread = (thread_list_t *)arg;
+    struct thread_list *this_thread = (struct thread_list *)arg;
     int client_socket = this_thread->sock;
     FILE *log_fp = this_thread->log_info.log_fp;
     while(1) {

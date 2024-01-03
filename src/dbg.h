@@ -14,8 +14,8 @@
 
 /* log level, logfile fp, test type, log msg */
 #define TESTER_LOG(lvl, fp, type, ...) LOGGER(LOG ## lvl, __FILE__, __LINE__, fp, type, __VA_ARGS__)
-
 extern void LOGGER(U8 level, char *filename, int line_num, FILE *log_fp, TEST_TYPE test_type, char *fmt,...);
+
 extern char *loglvl2str(U8 level);
 extern U8 tester_dbg_flag;
 

@@ -148,7 +148,7 @@ TEST_TYPE check_test_type(char *test_type)
  * 
  * @retval ERROR or SUCCESS, it will store in this_thread->result
 */
-void tester_exec_cmd(thread_list_t *this_thread)
+void exec_cmd(struct thread_list *this_thread)
 {
     struct exec_cmd_info *exec_cmd = &this_thread->exec_cmd;
     U16 timeout_sec = this_thread->exec_cmd.timeout_sec;
@@ -240,18 +240,10 @@ void tester_exec_cmd(thread_list_t *this_thread)
     OSTMR_StopXtmr(this_thread, 0);
 }
 
-void *tester_exec_cmd_in_thread(void *arg)
-{
-    thread_list_t *this_thread = (thread_list_t *)arg;
-    tester_exec_cmd(this_thread);
-
-    pthread_exit(NULL);
-}
-
 void *get_cmd_output(void *arg)
 {
     test_obj_t *test_obj = (test_obj_t *)arg;
-    thread_list_t *this_thread = test_obj->base_thread;
+    struct thread_list *this_thread = test_obj->base_thread;
     TEST_TYPE test_type = this_thread->test_type;
 
     if (test_obj->init_func(this_thread) == ERROR) {
@@ -343,7 +335,7 @@ FILE *create_logfile(TEST_TYPE test_type, char cwd[], char logfile_proc_path[])
     return log_fp;
 }
 
-STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_path[], STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread), STATUS(* timeout_func)(thread_list_t *this_thread))
+STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_path[], STATUS(* init_func)(struct thread_list *this_thread), STATUS(* test_func)(struct thread_list *this_thread), STATUS(* timeout_func)(struct thread_list *this_thread))
 {
     char logfile_proc_path[LOG_PATH_LEN];
     char *http_result_code = http_fail_header;
@@ -366,7 +358,6 @@ STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_pat
 
     test_obj.init_func = init_func;
     test_obj.test_func = test_func;
-    test_obj.timeout_func = timeout_func;
 
     /* create an empty cmd obj */
     struct log_info log_info;
@@ -380,6 +371,7 @@ STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_pat
         test_thread->sock = test_info.socket;
         test_thread->test_type = test_type;
         test_thread->log_info = log_info;
+        test_thread->timeout_func = timeout_func;
         if (script_path != NULL)
             strncpy(test_thread->script_path, script_path, sizeof(test_thread->script_path)-1);
         test_thread->script_path[sizeof(test_thread->script_path)-1] = '\0';

@@ -1,7 +1,6 @@
 #include <common.h>
 #include <errno.h>
 #include <signal.h>
-#include "tester.h"
 #include "thread.h"
 #include "dbg.h"
 
@@ -27,9 +26,9 @@ void libtester_bye(int signal_num, siginfo_t *info, void *context)
 
 	TESTER_LOG(INFO, NULL, 0, "recv signal %d, code %d", signal_num, info->si_code);
     libtester_clean();
-	killpg(getpgrp(), SIGKILL);
 	TESTER_LOG(INFO, NULL, 0, "bye!");
-	_exit(0);
+	killpg(getpgrp(), SIGKILL);
+	//_exit(0);
 }
 
 /*---------------------------------------------------------

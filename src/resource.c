@@ -139,7 +139,7 @@ struct pid_list *find_co_pid(pid_t parent_pid, TEST_TYPE test_type)
     return NULL;
 }
 
-void close_logfile(thread_list_t *target_thread)
+void close_logfile(struct thread_list *target_thread)
 {
     if (target_thread->log_info.logfile_proc_path != NULL) {
         struct stat statbuf;
@@ -159,7 +159,7 @@ BOOL is_process_exist(pid_t pid)
     return FALSE;
 }
 
-void kill_co_process(thread_list_t *target_thread)
+void kill_co_process(struct thread_list *target_thread)
 {
     struct pid_list *prev = NULL;
     TEST_TYPE test_type = target_thread->test_type;

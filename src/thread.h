@@ -31,7 +31,7 @@ struct log_info {
     FILE *log_fp;
 };
 
-typedef struct thread_list {
+struct thread_list {
     pthread_t thread_id;
     struct log_info log_info;
     struct pid_list *pid_list;
@@ -41,8 +41,9 @@ typedef struct thread_list {
     uuid_t test_uuid;
     char script_path[PATH_MAX];
     char branch_name[128];
+    STATUS (*timeout_func) (struct thread_list *this_thread);
     struct thread_list *next;
-}thread_list_t;
+};
 
 /*typedef struct test_obj {
     thread_list_t thread_info;
@@ -55,17 +56,17 @@ typedef struct thread_list {
     struct test_obj *next;
 }test_obj_t;*/
 
-extern thread_list_t *thread_list_head;
+extern struct thread_list *thread_list_head;
 extern pthread_mutex_t thread_list_lock;
-void add_thread_id_to_list(thread_list_t *new_thread);
-void add_thread_id_to_list_lock(thread_list_t *new_thread);
-BOOL is_thread_in_list(thread_list_t *thread);
-BOOL is_thread_in_list_lock(thread_list_t *thread);
-void remove_thread_id_from_list(thread_list_t **rm_thread);
+void add_thread_id_to_list(struct thread_list *new_thread);
+void add_thread_id_to_list_lock(struct thread_list *new_thread);
+BOOL is_thread_in_list(struct thread_list *thread);
+BOOL is_thread_in_list_lock(struct thread_list *thread);
+void remove_thread_id_from_list(struct thread_list **rm_thread);
 BOOL is_test_running(TEST_TYPE test_type);
-void get_all_timeout_threads_from_list(thread_list_t *timeout_thread, thread_list_t **timeout_list);
-void remove_all_threads_in_list(thread_list_t *del_list);
-void remove_all_timeout_threads_from_list(thread_list_t *timeout_thread);
-void remove_all_timeout_threads_from_list_lock(thread_list_t *timeout_thread);
+void get_all_timeout_threads_from_list(struct thread_list *timeout_thread, struct thread_list **timeout_list);
+void remove_all_threads_in_list(struct thread_list *del_list);
+void remove_all_timeout_threads_from_list(struct thread_list *timeout_thread);
+void remove_all_timeout_threads_from_list_lock(struct thread_list *timeout_thread);
 
 #endif
