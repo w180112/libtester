@@ -7,18 +7,18 @@
 
 void test_get_all_timeout_threads_from_list()
 {
-    thread_list_t *thread_1 = malloc(sizeof(thread_list_t));
-    memset(thread_1, 0, sizeof(thread_list_t));
-    thread_list_t *thread_2 = malloc(sizeof(thread_list_t));
-    memset(thread_2, 0, sizeof(thread_list_t));
-    thread_list_t *thread_3 = malloc(sizeof(thread_list_t));
-    memset(thread_3, 0, sizeof(thread_list_t));
-    thread_list_t *thread_4 = malloc(sizeof(thread_list_t));
-    memset(thread_4, 0, sizeof(thread_list_t));
-    thread_list_t *thread_5 = malloc(sizeof(thread_list_t));
-    memset(thread_5, 0, sizeof(thread_list_t));
-    thread_list_t *thread_6 = malloc(sizeof(thread_list_t));
-    memset(thread_6, 0, sizeof(thread_list_t));
+    struct thread_list *thread_1 = malloc(sizeof(struct thread_list));
+    memset(thread_1, 0, sizeof(struct thread_list));
+    struct thread_list *thread_2 = malloc(sizeof(struct thread_list));
+    memset(thread_2, 0, sizeof(struct thread_list));
+    struct thread_list *thread_3 = malloc(sizeof(struct thread_list));
+    memset(thread_3, 0, sizeof(struct thread_list));
+    struct thread_list *thread_4 = malloc(sizeof(struct thread_list));
+    memset(thread_4, 0, sizeof(struct thread_list));
+    struct thread_list *thread_5 = malloc(sizeof(struct thread_list));
+    memset(thread_5, 0, sizeof(struct thread_list));
+    struct thread_list *thread_6 = malloc(sizeof(struct thread_list));
+    memset(thread_6, 0, sizeof(struct thread_list));
     
     uuid_t test0_uuid;
     uuid_generate(test0_uuid);
@@ -50,7 +50,7 @@ void test_get_all_timeout_threads_from_list()
 
     thread_list_head = thread_1;
 
-    thread_list_t *timeout_threads = NULL;
+    struct thread_list *timeout_threads = NULL;
     get_all_timeout_threads_from_list(thread_6, &timeout_threads);
 
     /* test thread list contains TEST_TYPE_1 thread nodes after TEST_TYPE_1 test timeout */
@@ -63,7 +63,7 @@ void test_get_all_timeout_threads_from_list()
     assert(timeout_threads->next->next == thread_2);
     assert(timeout_threads->next->next->next == NULL);
 
-    thread_list_t *prev = NULL, *cur = thread_1;
+    struct thread_list *prev = NULL, *cur = thread_1;
     while(cur) {
         prev = cur;
         cur = cur->next;
@@ -81,18 +81,18 @@ void test_get_all_timeout_threads_from_list()
 
 void test_remove_thread_id_from_list()
 {
-    thread_list_t *thread_1 = malloc(sizeof(thread_list_t));
-    memset(thread_1, 0, sizeof(thread_list_t));
-    thread_list_t *thread_2 = malloc(sizeof(thread_list_t));
-    memset(thread_2, 0, sizeof(thread_list_t));
-    thread_list_t *thread_3 = malloc(sizeof(thread_list_t));
-    memset(thread_3, 0, sizeof(thread_list_t));
-    thread_list_t *thread_4 = malloc(sizeof(thread_list_t));
-    memset(thread_4, 0, sizeof(thread_list_t));
-    thread_list_t *thread_5 = malloc(sizeof(thread_list_t));
-    memset(thread_5, 0, sizeof(thread_list_t));
-    thread_list_t *thread_6 = malloc(sizeof(thread_list_t));
-    memset(thread_6, 0, sizeof(thread_list_t));
+    struct thread_list *thread_1 = malloc(sizeof(struct thread_list));
+    memset(thread_1, 0, sizeof(struct thread_list));
+    struct thread_list *thread_2 = malloc(sizeof(struct thread_list));
+    memset(thread_2, 0, sizeof(struct thread_list));
+    struct thread_list *thread_3 = malloc(sizeof(struct thread_list));
+    memset(thread_3, 0, sizeof(struct thread_list));
+    struct thread_list *thread_4 = malloc(sizeof(struct thread_list));
+    memset(thread_4, 0, sizeof(struct thread_list));
+    struct thread_list *thread_5 = malloc(sizeof(struct thread_list));
+    memset(thread_5, 0, sizeof(struct thread_list));
+    struct thread_list *thread_6 = malloc(sizeof(struct thread_list));
+    memset(thread_6, 0, sizeof(struct thread_list));
     
     uuid_t test0_uuid;
     uuid_generate(test0_uuid);
@@ -147,7 +147,7 @@ void test_remove_thread_id_from_list()
     sleep(1); // wait for killing process
     assert(is_process_exist(thread_6_exec_pid) == FALSE);
 
-    thread_list_t *prev = NULL, *cur = thread_1;
+    struct thread_list *prev = NULL, *cur = thread_1;
     while(cur) {
         prev = cur;
         cur = cur->next;
@@ -157,18 +157,18 @@ void test_remove_thread_id_from_list()
 
 void test_remove_all_threads_in_list()
 {
-    thread_list_t *thread_1 = malloc(sizeof(thread_list_t));
-    memset(thread_1, 0, sizeof(thread_list_t));
-    thread_list_t *thread_2 = malloc(sizeof(thread_list_t));
-    memset(thread_2, 0, sizeof(thread_list_t));
-    thread_list_t *thread_3 = malloc(sizeof(thread_list_t));
-    memset(thread_3, 0, sizeof(thread_list_t));
-    thread_list_t *thread_4 = malloc(sizeof(thread_list_t));
-    memset(thread_4, 0, sizeof(thread_list_t));
-    thread_list_t *thread_5 = malloc(sizeof(thread_list_t));
-    memset(thread_5, 0, sizeof(thread_list_t));
-    thread_list_t *thread_6 = malloc(sizeof(thread_list_t));
-    memset(thread_6, 0, sizeof(thread_list_t));
+    struct thread_list *thread_1 = malloc(sizeof(struct thread_list));
+    memset(thread_1, 0, sizeof(struct thread_list));
+    struct thread_list *thread_2 = malloc(sizeof(struct thread_list));
+    memset(thread_2, 0, sizeof(struct thread_list));
+    struct thread_list *thread_3 = malloc(sizeof(struct thread_list));
+    memset(thread_3, 0, sizeof(struct thread_list));
+    struct thread_list *thread_4 = malloc(sizeof(struct thread_list));
+    memset(thread_4, 0, sizeof(struct thread_list));
+    struct thread_list *thread_5 = malloc(sizeof(struct thread_list));
+    memset(thread_5, 0, sizeof(struct thread_list));
+    struct thread_list *thread_6 = malloc(sizeof(struct thread_list));
+    memset(thread_6, 0, sizeof(struct thread_list));
     
     uuid_t test0_uuid;
     uuid_generate(test0_uuid);
@@ -220,7 +220,7 @@ void test_remove_all_threads_in_list()
 
     thread_list_head = thread_1;
 
-    thread_list_t *timeout_threads = NULL;
+    struct thread_list *timeout_threads = NULL;
     get_all_timeout_threads_from_list(thread_6, &timeout_threads);
     remove_all_threads_in_list(timeout_threads);
     sleep(1); // wait for killing process
@@ -228,7 +228,7 @@ void test_remove_all_threads_in_list()
     assert(is_process_exist(thread_3_exec_pid) == FALSE);
     assert(is_process_exist(thread_6_exec_pid) == FALSE);
 
-    thread_list_t *prev = NULL, *cur = thread_1;
+    struct thread_list *prev = NULL, *cur = thread_1;
     while(cur) {
         prev = cur;
         cur = cur->next;
