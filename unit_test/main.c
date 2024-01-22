@@ -4,6 +4,11 @@
 
 int main()
 {
+    int timer_pid = tmrInit();
+    if (timer_pid == -1) {
+        perror("timer init failed");
+        return -1;
+    }
     signal(SIGCHLD, SIG_IGN);
 
     puts("====================start unit tests====================\n");
@@ -19,4 +24,8 @@ int main()
 
     puts("\nall test successfully");
     puts("====================end of unit tests====================");
+
+    kill(timer_pid, SIGKILL);
+
+    return 0;
 }

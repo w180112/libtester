@@ -30,12 +30,10 @@ void timeout_handler(struct thread_list *timeout_thread)
         drv_xmit((U8 *)http_fail_header, strlen(http_fail_header)+1, timeout_thread->sock);
         /* we need to get log_fp in advance because timeout_thread memory region will be free */
         remove_all_timeout_threads_from_list(timeout_thread);
-        TESTER_LOG(DBG, log_fp, test_type, "timeout thread removed");
         timeout_thread = NULL;
+        fclose(log_fp);
     }
     pthread_mutex_unlock(&thread_list_lock);
-    
-    fclose(log_fp);
 }
 
 int tester_start(int argc, char **argv, char **test_types, int test_type_count, BOOL allow_test_able_rerun, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread), STATUS(* timeout_func)(thread_list_t *this_thread))

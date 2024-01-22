@@ -31,6 +31,7 @@ void test_insert_co_pid_2_list() {
     new_pid3->next = NULL;
 
     assert(insert_co_pid_2_list(&co_pid_list, new_pid3) == ERROR);  // Check that the function returns ERROR.
+    free(new_pid3);  // Free the memory allocated for the duplicate node.
 
     struct pid_list *prev = NULL, *cur = co_pid_list;
     while(cur) {
