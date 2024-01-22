@@ -65,6 +65,7 @@ void remove_thread_id_from_list(struct thread_list **rm_thread)
             close((*rm_thread)->exec_cmd.out_fp);
             free(*rm_thread);
             *rm_thread = NULL;
+            break;
         }
         cur=cur->next;
     }
@@ -118,6 +119,7 @@ void remove_all_threads_in_list(struct thread_list *del_list)
         close(del_node->exec_cmd.out_fp);
         if (del_node->thread_id != 0) // for unit test check, otherwise thread_id is always meaningful
             pthread_cancel(del_node->thread_id);
+        OSTMR_StopXtmr(del_node, 0);
         free(del_node);
     }
 }
@@ -135,4 +137,14 @@ void remove_all_timeout_threads_from_list_lock(struct thread_list *timeout_threa
     pthread_mutex_lock(&thread_list_lock);
     remove_all_timeout_threads_from_list(timeout_thread);
     pthread_mutex_unlock(&thread_list_lock);
+}
+
+struct thread_list *new_thread_node()
+{
+    struct thread_list *new_thread = (struct thread_list *)malloc(sizeof(struct thread_list));
+    if (new_thread == NULL)
+        return NULL;
+    memset(new_thread, 0, sizeof(struct thread_list));
+
+    return new_thread;
 }

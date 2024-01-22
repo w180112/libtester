@@ -45,17 +45,6 @@ struct thread_list {
     struct thread_list *next;
 };
 
-/*typedef struct test_obj {
-    thread_list_t thread_info;
-    void (*start_cmd) ();
-    void (*wait_cmd_finished) ();
-    void (*delete_cmd) ();
-    void (*stop_cmd_timer) ();
-    void (*stop_cmd) ();
-    STATUS (*get_test_result) ();
-    struct test_obj *next;
-}test_obj_t;*/
-
 extern struct thread_list *thread_list_head;
 extern pthread_mutex_t thread_list_lock;
 void add_thread_id_to_list(struct thread_list *new_thread);
@@ -68,5 +57,6 @@ void get_all_timeout_threads_from_list(struct thread_list *timeout_thread, struc
 void remove_all_threads_in_list(struct thread_list *del_list);
 void remove_all_timeout_threads_from_list(struct thread_list *timeout_thread);
 void remove_all_timeout_threads_from_list_lock(struct thread_list *timeout_thread);
+struct thread_list *new_thread_node();
 
 #endif

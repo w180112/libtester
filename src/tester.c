@@ -17,6 +17,27 @@ extern BOOL is_test_able_rerun;
 extern char **total_test_types;
 extern TEST_TYPE total_test_types_count;
 
+void timeout_handler(struct thread_list *timeout_thread)
+{
+    FILE *log_fp = timeout_thread->log_info.log_fp;
+    TEST_TYPE test_type = timeout_thread->test_type;
+
+    timeout_thread->timeout_func(timeout_thread);
+
+    pthread_mutex_lock(&thread_list_lock);
+    if (is_thread_in_list(timeout_thread) == TRUE) {
+        TESTER_LOG(INFO, timeout_thread->log_info.log_fp, test_type, "test [%s] timeout", timeout_thread->exec_cmd.cmd);
+        drv_xmit((U8 *)http_fail_header, strlen(http_fail_header)+1, timeout_thread->sock);
+        /* we need to get log_fp in advance because timeout_thread memory region will be free */
+        remove_all_timeout_threads_from_list(timeout_thread);
+        TESTER_LOG(DBG, log_fp, test_type, "timeout thread removed");
+        timeout_thread = NULL;
+    }
+    pthread_mutex_unlock(&thread_list_lock);
+    
+    fclose(log_fp);
+}
+
 int tester_start(int argc, char **argv, char **test_types, int test_type_count, BOOL allow_test_able_rerun, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread), STATUS(* timeout_func)(thread_list_t *this_thread))
 {
     tTESTER_MBX		*mail;
@@ -89,12 +110,12 @@ int tester_start(int argc, char **argv, char **test_types, int test_type_count, 
     is_test_able_rerun = allow_test_able_rerun;
 
     pthread_t processing;
-    thread_list_head = (struct thread_list *)malloc(sizeof(struct thread_list));
+    thread_list_head = new_thread_node();
     thread_list_head->log_info.log_fp = log_fp;
-    thread_list_head->thread_id = processing;
     thread_list_head->test_type = 0; // ignore test type in socket thread
     thread_list_head->next = NULL;
     pthread_create(&processing, NULL, recv_req, (void *restrict)&q_key);
+    thread_list_head->thread_id = processing;
 
 	for(;;) {
 		TESTER_LOG(INFO, log_fp, 0, "%s","======================== waiting for new event ========================");
@@ -108,18 +129,7 @@ int tester_start(int argc, char **argv, char **test_types, int test_type_count, 
 		case IPC_EV_TYPE_TMR:
             ipc_prim = (tIPC_PRIM *)mbuf.mtext;
             thread_list_t *timeout_thread = (thread_list_t *)ipc_prim->ccb;
-            pthread_mutex_lock(&thread_list_lock);
-            if (is_thread_in_list(timeout_thread) == TRUE) {
-                TEST_TYPE test_type = timeout_thread->test_type;
-                TESTER_LOG(INFO, timeout_thread->log_info.log_fp, test_type, "test [%s] timeout", timeout_thread->exec_cmd.cmd);
-                drv_xmit((U8 *)http_fail_header, strlen(http_fail_header)+1, timeout_thread->sock);
-                /* we need to get log_fp in advance because timeout_thread memory region will be free */
-                FILE *log_fp = timeout_thread->log_info.log_fp;
-                remove_all_timeout_threads_from_list(timeout_thread);
-                fclose(log_fp);
-            }
-            pthread_mutex_unlock(&thread_list_lock);
-            timeout_thread->timeout_func(timeout_thread);
+            timeout_handler(timeout_thread);
 			break;
 		case IPC_EV_TYPE_DRV:
 			mail = (tTESTER_MBX *)mbuf.mtext;
@@ -268,7 +278,7 @@ struct thread_list *tester_new_cmd(struct thread_list base_thread, const char *c
 {
     TEST_TYPE test_type = base_thread.test_type;
 
-    struct thread_list *new_thread = (struct thread_list *)malloc(sizeof(struct thread_list));
+    struct thread_list *new_thread = new_thread_node();
     if (new_thread == NULL) {
         TESTER_LOG(INFO, base_thread.log_info.log_fp, test_type, "allocate memory for thread object failed: %s", strerror(errno));
         return NULL;
@@ -282,15 +292,15 @@ struct thread_list *tester_new_cmd(struct thread_list base_thread, const char *c
     new_thread->pid_list = NULL;
     new_thread->next = NULL;
 
-    if (base_thread.log_info.logfile_proc_path != NULL)
+    if (strlen(base_thread.log_info.logfile_proc_path) != 0)
         strncpy(new_thread->log_info.logfile_proc_path, base_thread.log_info.logfile_proc_path, sizeof(new_thread->log_info.logfile_proc_path)-1);
     new_thread->log_info.logfile_proc_path[sizeof(new_thread->log_info.logfile_proc_path)-1] = '\0';
 
-    if (base_thread.script_path != NULL)
+    if (strlen(base_thread.script_path) != 0)
         strncpy(new_thread->script_path, base_thread.script_path, sizeof(new_thread->script_path)-1);
     new_thread->script_path[sizeof(new_thread->script_path)-1] = '\0';
 
-    if (base_thread.branch_name != NULL)
+    if (strlen(base_thread.branch_name) != 0)
         strncpy(new_thread->branch_name, base_thread.branch_name, sizeof(new_thread->branch_name)-1);
     new_thread->branch_name[sizeof(new_thread->branch_name)-1] = '\0';
 

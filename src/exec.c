@@ -39,7 +39,8 @@ pid_t popen2(const char *command, int *infp, int *outfp)
     if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0)
         return -1;
 
-    signal(SIGCHLD, SIG_IGN);
+    /* we don't need to ignore SIGCHLD because we use pclose2() to claim child */
+    // signal(SIGCHLD, SIG_IGN);
     pid_t pid = fork();
 
     if (pid < 0)
@@ -230,6 +231,7 @@ void exec_cmd(struct thread_list *this_thread)
             is_exit_code_0 = FALSE;
             printf("Child exited via signal %d\n",WTERMSIG(cmd_status));
         }
+        pclose2(pid);
     }
     else {
         TESTER_LOG(INFO, log_fp, test_type, "kill cmd process %d", pid);
@@ -298,7 +300,6 @@ FILE *create_logfile(TEST_TYPE test_type, char cwd[], char logfile_proc_path[])
     DIR *d = opendir(proc_path);
     if (d) {
         struct dirent *dir;
-        logfile_proc_path[0] = '\0';
         while ((dir = readdir(d)) != NULL) {
             char symlink_real_path[PATH_MAX];
             if (dir->d_type != DT_LNK)
@@ -337,14 +338,16 @@ FILE *create_logfile(TEST_TYPE test_type, char cwd[], char logfile_proc_path[])
 
 STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_path[], STATUS(* init_func)(struct thread_list *this_thread), STATUS(* test_func)(struct thread_list *this_thread), STATUS(* timeout_func)(struct thread_list *this_thread))
 {
-    char logfile_proc_path[LOG_PATH_LEN];
+    char logfile_proc_path[LOG_PATH_LEN] = {'\0'};
     char *http_result_code = http_fail_header;
     test_obj_t test_obj;
     FILE *log_fp = NULL;
 
     TEST_TYPE test_type = check_test_type(test_info.test_type);
-    if (test_type == -1)
+    if (test_type == -1) {
+        TESTER_LOG(INFO, NULL, 0, "test type [%s] is not supported", test_info.test_type);
         goto err;
+    }
 
     log_fp = create_logfile(test_type, logfile_path, logfile_proc_path);
     if (log_fp == NULL)
@@ -361,11 +364,11 @@ STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_pat
 
     /* create an empty cmd obj */
     struct log_info log_info;
-    if (logfile_proc_path != NULL)
+    if (strlen(logfile_proc_path) != 0)
         strncpy(log_info.logfile_proc_path, logfile_proc_path, sizeof(log_info.logfile_proc_path)-1);
     log_info.logfile_proc_path[sizeof(log_info.logfile_proc_path)-1] = '\0';
     log_info.log_fp = log_fp;
-    struct thread_list *test_thread = (struct thread_list *)malloc(sizeof(struct thread_list));
+    struct thread_list *test_thread = new_thread_node();
     if (test_thread != NULL) {
         memset(test_thread, 0, sizeof(struct thread_list));
         test_thread->sock = test_info.socket;
@@ -375,7 +378,7 @@ STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_pat
         if (script_path != NULL)
             strncpy(test_thread->script_path, script_path, sizeof(test_thread->script_path)-1);
         test_thread->script_path[sizeof(test_thread->script_path)-1] = '\0';
-        if (test_info.branch_name != NULL)
+        if (strlen(test_info.branch_name) != 0)
             strncpy(test_thread->branch_name, test_info.branch_name, sizeof(test_thread->branch_name)-1);
         test_thread->branch_name[sizeof(test_thread->branch_name)-1] = '\0';
         uuid_generate(test_thread->test_uuid);

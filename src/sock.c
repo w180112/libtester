@@ -67,10 +67,6 @@ STATUS get_sys_default_if(char *default_if)
     int flags, refcnt, use, metric, mtu, win, irtt;
     STATUS ret = ERROR;
 
-    if (if_name == NULL) {
-        TESTER_LOG(INFO, NULL, 0, "malloc failed");
-        return ERROR;
-    }
     FILE *fp = fopen("/proc/net/route", "r");
     if (fp == NULL) {
         TESTER_LOG(INFO, NULL, 0, "fopen /proc/net/route failed: %s", strerror(errno));
