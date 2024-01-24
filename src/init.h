@@ -11,9 +11,9 @@ extern void libtester_clean();
 extern tIPC_ID q_key;
 
 typedef struct {
-	U16  type;
-	U8   refp[1500];
-	int	 len;
+    U16  type;
+    U8   refp[1500];
+    int	 len;
 } tTESTER_MBX;
 
 #endif

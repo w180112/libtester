@@ -21,12 +21,12 @@ extern char **total_test_types;
  ***************************************************/	
 void LOGGER(U8 level, char *filename, int line_num, FILE *log_fp, TEST_TYPE test_type, char *fmt,...)
 {
-	va_list ap; /* points to each unnamed arg in turn */
-	char    buf[LOGGER_BUF_LEN], msg[LOGGER_VA_MSG_LEN];
-	
-	//user offer level must > system requirement
+    va_list ap; /* points to each unnamed arg in turn */
+    char    buf[LOGGER_BUF_LEN], msg[LOGGER_VA_MSG_LEN];
+
+    //user offer level must > system requirement
     if (tester_dbg_flag > level)
-    	return;
+        return;
     
     char *test_type_str;
     if (test_type <= 0)
@@ -38,7 +38,7 @@ void LOGGER(U8 level, char *filename, int line_num, FILE *log_fp, TEST_TYPE test
     vsnprintf(msg, LOGGER_VA_MSG_LEN, fmt, ap);
     sprintf(buf, "%s: %s:%d> ", test_type_str, filename, line_num);
     
-  	strncat(buf, msg, strlen(msg)+1);
+    strncat(buf, msg, strlen(msg)+1);
     va_end(ap);
 
     buf[strlen(buf)] = '\0';

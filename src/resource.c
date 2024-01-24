@@ -3,7 +3,6 @@
 #include "thread.h"
 #include "dbg.h"
 
-
 #define insert_list_node(type, head, target, new_node, target_element) \
     find_indirect_node(type, head, target, target_element) \
     new_node->next = (*p)->next; \

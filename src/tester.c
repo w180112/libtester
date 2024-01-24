@@ -38,12 +38,12 @@ void timeout_handler(struct thread_list *timeout_thread)
 
 int tester_start(int argc, char **argv, char **test_types, int test_type_count, BOOL allow_test_able_rerun, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread), STATUS(* timeout_func)(thread_list_t *this_thread))
 {
-    tTESTER_MBX		*mail;
-	tMBUF   		mbuf;
-	int				msize;
-	U16				ipc_type;
-    tIPC_PRIM		*ipc_prim;
-    STATUS          ret;
+    tTESTER_MBX	*mail;
+    tMBUF       mbuf;
+    int	        msize;
+    U16	        ipc_type;
+    tIPC_PRIM   *ipc_prim;
+    STATUS      ret;
 
     struct cmd_opt options = {
         .daemon = FALSE,
@@ -82,9 +82,9 @@ int tester_start(int argc, char **argv, char **test_types, int test_type_count, 
     TESTER_LOG(INFO, NULL, 0, "loglvl is %s", loglvl2str(tester_dbg_flag));
 
     FILE *log_fp;
-	if (libtester_init(&q_key, options.service_logfile_path, &log_fp) == ERROR) {
+    if (libtester_init(&q_key, options.service_logfile_path, &log_fp) == ERROR) {
         TESTER_LOG(INFO, log_fp, 0, "libtester init failed");
-		return -1;
+        return -1;
     }
 
     if (options.daemon == TRUE) {
@@ -115,28 +115,28 @@ int tester_start(int argc, char **argv, char **test_types, int test_type_count, 
     pthread_create(&processing, NULL, recv_req, (void *restrict)&q_key);
     thread_list_head->thread_id = processing;
 
-	for(;;) {
-		TESTER_LOG(INFO, log_fp, 0, "%s","======================== waiting for new event ========================");
+    for(;;) {
+        TESTER_LOG(INFO, log_fp, 0, "%s","======================== waiting for new event ========================");
         if (ipc_rcv2(q_key, &mbuf, &msize) == ERROR) {
             TESTER_LOG(INFO, log_fp, 0, "%s", "========== ipc error ==========");
             sleep(1);
-			continue;
+            continue;
         }
-	    ipc_type = *(U16 *)mbuf.mtext;
-		switch(ipc_type) {
-		case IPC_EV_TYPE_TMR:
+        ipc_type = *(U16 *)mbuf.mtext;
+        switch(ipc_type) {
+        case IPC_EV_TYPE_TMR:
             ipc_prim = (tIPC_PRIM *)mbuf.mtext;
             thread_list_t *timeout_thread = (thread_list_t *)ipc_prim->ccb;
             timeout_handler(timeout_thread);
-			break;
-		case IPC_EV_TYPE_DRV:
-			mail = (tTESTER_MBX *)mbuf.mtext;
+            break;
+        case IPC_EV_TYPE_DRV:
+            mail = (tTESTER_MBX *)mbuf.mtext;
             struct test_info test_info = *(struct test_info *)mail->refp;
             init_cmd(test_info, options.service_logfile_path, options.default_script_path, init_func, test_func, timeout_func);
-			break;
-		default:
-		    ;
-		}
+            break;
+        default:
+            ;
+        }
     }
 
     pthread_join(processing, NULL);

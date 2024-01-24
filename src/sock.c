@@ -197,24 +197,24 @@ STATUS parse_test_request(struct test_info *test_info, char buf[], int n, FILE *
 
 STATUS tester_send2mailbox(U8 *mu, int mulen)
 {
-	tTESTER_MBX mail;
+    tTESTER_MBX mail;
 
     if (msg_qid == -1) {
-		if ((msg_qid=msgget(0x0b00,0600|IPC_CREAT)) < 0) {
-			printf("send> Oops! Q(key=0x%x) not found\n",0x0b00);
-   	 	}
-	}
+        if ((msg_qid=msgget(0x0b00,0600|IPC_CREAT)) < 0)
+            printf("send> Oops! Q(key=0x%x) not found\n",0x0b00);
+    }
 
-	mail.len = mulen;
-	memcpy(mail.refp,mu,mulen); /* mail content will be copied into mail queue */
-	
-	mail.type = IPC_EV_TYPE_DRV;
-	ipc_sw(msg_qid, &mail, sizeof(mail), -1);
-	return TRUE;
+    mail.len = mulen;
+    memcpy(mail.refp,mu,mulen); /* mail content will be copied into mail queue */
+
+    mail.type = IPC_EV_TYPE_DRV;
+    ipc_sw(msg_qid, &mail, sizeof(mail), -1);
+
+    return TRUE;
 }
 
 void drv_xmit(U8 *mu, U16 mulen, int sock)
 {
-	if (send(sock, mu, mulen, 0) < 0)
+    if (send(sock, mu, mulen, 0) < 0)
         perror("send error");
 }
