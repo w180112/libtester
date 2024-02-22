@@ -104,7 +104,8 @@ BOOL is_process_running(pid_t pid, int *status)
         else if (ret == pid) {
             return FALSE;
         }
-        sleep(1);
+        TESTER_LOG(DBG, NULL, 0, "waiting 10 sec for child process %d", pid);
+        sleep(10);
     }
 
     return TRUE;
@@ -172,7 +173,6 @@ void exec_cmd(struct thread_list *this_thread)
     pid = popen2(cmd, NULL, &out_fp);
     TESTER_LOG(DBG, log_fp, test_type, "main exec pid = %d", pid);
 
-    
     cmd_fp = fdopen(out_fp, "r");
     exec_cmd->cmd_fp = cmd_fp;
     exec_cmd->out_fp = out_fp;
@@ -213,12 +213,6 @@ void exec_cmd(struct thread_list *this_thread)
             break;
         }
     }
-    //TESTER_LOG(DBG, log_fp, test_type, "fwrite %u bytes to log file", total_len);
-    if (cmd_fp != NULL) {
-        fclose(cmd_fp);
-        cmd_fp = NULL;
-    }
-    close(out_fp);
 
     int cmd_status;
     if (is_process_running(pid, &cmd_status) == FALSE) {
@@ -231,12 +225,19 @@ void exec_cmd(struct thread_list *this_thread)
             is_exit_code_0 = FALSE;
             printf("Child exited via signal %d\n",WTERMSIG(cmd_status));
         }
-        pclose2(pid);
     }
     else {
         TESTER_LOG(INFO, log_fp, test_type, "kill cmd process %d", pid);
         kill(pid, SIGKILL);
+        // is_exit_code_0 = TRUE; // we already got the correct stdout result
     }
+    pclose2(pid);
+    if (cmd_fp != NULL) {
+        fclose(cmd_fp);
+        cmd_fp = NULL;
+    }
+    close(out_fp);
+
     this_thread->exec_cmd.result = is_stdout_correct == TRUE && is_exit_code_0 == TRUE ? SUCCESS : ERROR;
 
     OSTMR_StopXtmr(this_thread, 0);
