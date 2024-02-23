@@ -16,6 +16,11 @@
 extern BOOL is_test_able_rerun;
 extern char **total_test_types;
 extern TEST_TYPE total_test_types_count;
+struct cmd_opt options = {
+    .service_logfile_path = "\0",
+    .default_script_path = "\0",
+    .service_config_path = "\0",
+};
 
 void timeout_handler(struct thread_list *timeout_thread)
 {
@@ -36,7 +41,7 @@ void timeout_handler(struct thread_list *timeout_thread)
     pthread_mutex_unlock(&thread_list_lock);
 }
 
-int tester_start(int argc, char **argv, char **test_types, int test_type_count, BOOL allow_test_able_rerun, STATUS(* init_func)(thread_list_t *this_thread), STATUS(* test_func)(thread_list_t *this_thread), STATUS(* timeout_func)(thread_list_t *this_thread))
+int tester_start(struct tester_cmd tester_cmd)
 {
     tTESTER_MBX	*mail;
     tMBUF       mbuf;
@@ -44,52 +49,22 @@ int tester_start(int argc, char **argv, char **test_types, int test_type_count, 
     U16	        ipc_type;
     tIPC_PRIM   *ipc_prim;
     STATUS      ret;
-
-    struct cmd_opt options = {
-        .daemon = FALSE,
-        .service_logfile_path = "\0",
-        .default_script_path = "\0",
-    };
-    tester_dbg_flag = LOGDBG;
-    if (parse_cmd(argc, argv, &options) == ERROR)
-        return -1;
+    char        **test_types = tester_cmd.test_types;
+    int         test_type_count = tester_cmd.test_type_count;
+    BOOL        allow_test_able_rerun = tester_cmd.allow_test_able_rerun;
+    STATUS      (*init_func)(struct thread_list *this_thread) = (STATUS(*)(struct thread_list *))tester_cmd.init_func;
+    STATUS      (*test_func)(struct thread_list *this_thread) = (STATUS(*)(struct thread_list *))tester_cmd.test_func;
+    STATUS      (*timeout_func)(struct thread_list *this_thread) = (STATUS(*)(struct thread_list *))tester_cmd.timeout_func;
 
     if (test_types == NULL) {
         TESTER_LOG(INFO, NULL, 0, "test_types is empty");
         return -1;
     }
 
-    if (strlen(options.service_logfile_path) == 0) {
-        strncpy(options.service_logfile_path, "/var/log/libtester", PATH_MAX-1);
-        options.service_logfile_path[PATH_MAX-1] = '\0';
-    }
-    if (strlen(options.default_script_path) == 0) {
-        strncpy(options.default_script_path, "/usr/local/bin/libtester", PATH_MAX-1);
-        options.default_script_path[PATH_MAX-1] = '\0';
-    }
-    if (strlen(options.service_config_path) == 0) {
-        strncpy(options.service_config_path, "/etc/libtester/config.cfg", PATH_MAX-1);
-        options.service_config_path[PATH_MAX-1] = '\0';
-    }
-    TESTER_LOG(INFO, NULL, 0, "use %s as logfile located directory", options.service_logfile_path);
-    TESTER_LOG(INFO, NULL, 0, "use %s as custom script located directory", options.default_script_path);
-    TESTER_LOG(INFO, NULL, 0, "use %s as config file", options.service_config_path);
-
-    if (parse_config(options.service_config_path) == ERROR) {
-        TESTER_LOG(INFO, NULL, 0, "parse config file error");
-        return -1;
-    }
-    TESTER_LOG(INFO, NULL, 0, "loglvl is %s", loglvl2str(tester_dbg_flag));
-
     FILE *log_fp;
     if (libtester_init(&q_key, options.service_logfile_path, &log_fp) == ERROR) {
         TESTER_LOG(INFO, log_fp, 0, "libtester init failed");
         return -1;
-    }
-
-    if (options.daemon == TRUE) {
-        if (daemon(1, 0))
-            TESTER_LOG(INFO, log_fp, 0, "daemonlize failed");
     }
 
     total_test_types = malloc(sizeof(char *) * test_type_count);
@@ -153,7 +128,40 @@ end:
     return ret;
 }
 
-int tester_get_test_info(struct thread_list *thread, struct tester_info *test_info)
+int tester_parse_args(int argc, char **argv)
+{
+    tester_dbg_flag = LOGDBG;
+
+    int args_count = parse_cmd(argc, argv, &options);
+    if (args_count < 0)
+        return -1;
+
+    if (strlen(options.service_logfile_path) == 0) {
+        strncpy(options.service_logfile_path, "/var/log/libtester", PATH_MAX-1);
+        options.service_logfile_path[PATH_MAX-1] = '\0';
+    }
+    if (strlen(options.default_script_path) == 0) {
+        strncpy(options.default_script_path, "/usr/local/bin/libtester", PATH_MAX-1);
+        options.default_script_path[PATH_MAX-1] = '\0';
+    }
+    if (strlen(options.service_config_path) == 0) {
+        strncpy(options.service_config_path, "/etc/libtester/config.cfg", PATH_MAX-1);
+        options.service_config_path[PATH_MAX-1] = '\0';
+    }
+    TESTER_LOG(INFO, NULL, 0, "use %s as logfile located directory", options.service_logfile_path);
+    TESTER_LOG(INFO, NULL, 0, "use %s as custom script located directory", options.default_script_path);
+    TESTER_LOG(INFO, NULL, 0, "use %s as config file", options.service_config_path);
+
+    if (parse_config(options.service_config_path) == ERROR) {
+        TESTER_LOG(INFO, NULL, 0, "parse config file error");
+        return -1;
+    }
+    TESTER_LOG(INFO, NULL, 0, "loglvl is %s", loglvl2str(tester_dbg_flag));
+
+    return args_count;
+}
+
+int tester_get_test_info(thread_list_t *thread, struct tester_info *test_info)
 {
     if (thread == NULL || test_info == NULL) {
         TESTER_LOG(INFO, NULL, 0, "input NULL pointer");
@@ -176,7 +184,7 @@ int tester_get_test_info(struct thread_list *thread, struct tester_info *test_in
  * 
  * @retval ERROR or SUCCESS, it will store in this_thread->result
 */
-void tester_exec_cmd(struct thread_list *this_thread)
+void tester_exec_cmd(thread_list_t *this_thread)
 {
     if (this_thread == NULL) {
         TESTER_LOG(INFO, NULL, 0, "executed thread obj is NULL");
@@ -193,7 +201,7 @@ void *tester_exec_cmd_in_thread(void *arg)
     pthread_exit(NULL);
 }
 
-void tester_start_cmd(struct thread_list *thread)
+void tester_start_cmd(thread_list_t *thread)
 {
     if (thread == NULL) {
         TESTER_LOG(INFO, NULL, 0, "started thread obj is NULL");
@@ -203,7 +211,7 @@ void tester_start_cmd(struct thread_list *thread)
     pthread_create(&thread->thread_id, NULL, tester_exec_cmd_in_thread, (void *restrict)thread);
 }
 
-void tester_wait_cmd_finished(struct thread_list *thread)
+void tester_wait_cmd_finished(thread_list_t *thread)
 {
     if (thread == NULL) {
         TESTER_LOG(INFO, NULL, 0, "waiting thread obj is NULL");
@@ -212,7 +220,7 @@ void tester_wait_cmd_finished(struct thread_list *thread)
     pthread_join(thread->thread_id, NULL);
 }
 
-void tester_delete_cmd(struct thread_list *thread)
+void tester_delete_cmd(thread_list_t *thread)
 {
     if (thread == NULL) {
         TESTER_LOG(INFO, NULL, 0, "deleted thread obj is NULL");
@@ -227,7 +235,7 @@ void tester_delete_cmd(struct thread_list *thread)
     free(thread);
 }
 
-void tester_stop_cmd_timer(struct thread_list *thread)
+void tester_stop_cmd_timer(thread_list_t *thread)
 {
     if (thread == NULL) {
         TESTER_LOG(INFO, NULL, 0, "stopped timer thread obj is NULL");
@@ -236,7 +244,7 @@ void tester_stop_cmd_timer(struct thread_list *thread)
     OSTMR_StopXtmr(thread, 0);
 }
 
-void tester_stop_cmd(struct thread_list *thread)
+void tester_stop_cmd(thread_list_t *thread)
 {
     if (thread == NULL) {
         TESTER_LOG(INFO, NULL, 0, "stopped thread obj is NULL");
@@ -247,7 +255,7 @@ void tester_stop_cmd(struct thread_list *thread)
     tester_delete_cmd(thread);
 }
 
-int tester_get_test_result(struct thread_list *thread)
+int tester_get_test_result(thread_list_t *thread)
 {
     if (thread == NULL) {
         TESTER_LOG(INFO, NULL, 0, "get test result thread obj is NULL");
@@ -272,7 +280,7 @@ int tester_get_test_result(struct thread_list *thread)
  * 
  * @retval The cmd objest
 */
-struct thread_list *tester_new_cmd(struct thread_list base_thread, const char *cmd, const char *result_check, BOOL print_stdout, U16 timeout_sec)
+thread_list_t *tester_new_cmd(thread_list_t base_thread, const char *cmd, const char *result_check, uint8_t print_stdout, uint16_t timeout_sec)
 {
     TEST_TYPE test_type = base_thread.test_type;
 
@@ -303,8 +311,8 @@ struct thread_list *tester_new_cmd(struct thread_list base_thread, const char *c
     new_thread->branch_name[sizeof(new_thread->branch_name)-1] = '\0';
 
     struct exec_cmd_info exec_cmd = {
-        .print_stdout = print_stdout,
-        .timeout_sec = timeout_sec,
+        .print_stdout = (BOOL)print_stdout,
+        .timeout_sec = (U16)timeout_sec,
     };
     if (cmd != NULL) {
         strncpy(exec_cmd.cmd, cmd, 8191);

@@ -16,18 +16,15 @@ void print_usage(char *argv)
     printf("    -c        set config file path\n");
 }
 
-STATUS parse_cmd(int argc, char **argv, struct cmd_opt *options)
+int parse_cmd(int argc, char **argv, struct cmd_opt *options)
 {
     int opt;
-    while ((opt = getopt(argc, argv, "dhl:s:c:")) != -1) {
+    int ret = 0;
+    while ((opt = getopt(argc, argv, "hl:s:c:")) != -1) {
         switch(opt) {
-        case 'd':
-            options->daemon = TRUE;
-            puts("set shell tester running in daemon mode");
-            break;
         case 'h':
             print_usage(argv[0]);
-            return ERROR;
+            exit(0);
         case 'l':
             strncpy(options->service_logfile_path, optarg, PATH_MAX-1);
             options->service_logfile_path[PATH_MAX-1] = '\0';
@@ -46,19 +43,25 @@ STATUS parse_cmd(int argc, char **argv, struct cmd_opt *options)
             else if (isprint(optopt))
                 fprintf(stderr, "unknown option -%c\n", optopt);
             else
-                fprintf(stderr, "unknown option character \\x%x\n", optopt);
+                fprintf(stderr, "unknown option character \\x%c\n", optopt);
             print_usage(argv[0]);
-            return ERROR;
+            return -1;
         default:
             ;
         }
     }
-    for (int index=optind; index < argc; index++) {
+    /*for (int index=optind; index < argc; index++) {
         printf("non-option argument %s\n", argv[index]);
-        return ERROR;
-    }
+        return -1;
+    }*/
 
-    return SUCCESS;
+    if (optind > 0) {
+		argv[optind-1] = argv[0];
+	    ret = optind - 1;
+    }
+	optind = 0; /* reset getopt lib */
+
+    return ret;
 }
 
 STATUS parse_config(const char *config_path) 
