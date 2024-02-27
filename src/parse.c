@@ -8,8 +8,7 @@ struct cfg_opt cfg_opt;
 
 void print_usage(char *argv)
 {
-    printf("Usage: %s [-dhlsc]\n", argv);
-    printf("    -d        sets running in daemon mode to true, default is false\n");
+    printf("Usage: %s [-hlsc]\n", argv);
     printf("    -h        show help message\n");
     printf("    -l        set logfile located directory\n");
     printf("    -s        set custom script located directory\n");
