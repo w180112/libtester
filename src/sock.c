@@ -124,31 +124,42 @@ void *recv_cmd(void *arg)
     struct thread_list *this_thread = (struct thread_list *)arg;
     int client_socket = this_thread->sock;
     FILE *log_fp = this_thread->log_info.log_fp;
+    struct test_info *test_info = NULL;
+
     while(1) {
         char buf[1024];
         memset(buf, 0, 1024);
         int n = recv(client_socket, buf, 1024, 0);
         if (n == 0) {
             TESTER_LOG(INFO, log_fp, 0, "client closed\n");
-            close(client_socket);
             break;
         }
         else if (n < 0) {
             TESTER_LOG(INFO, log_fp, 0, "socket recv error");
-            close(client_socket);
             break;
         }
-        struct test_info test_info;
-        test_info.socket = client_socket;
-        if (parse_test_request(&test_info, buf, n, log_fp) == ERROR) {
+        test_info = (struct test_info *)malloc(sizeof(struct test_info));
+        memset(test_info, 0, sizeof(*test_info));
+        test_info->socket = client_socket;
+        test_info->is_test_end = FALSE;
+        uuid_generate(test_info->test_uuid);
+        if (parse_test_request(test_info, buf, n, log_fp) == ERROR) {
             drv_xmit((U8 *)http_400_header, strlen(http_400_header)+1, client_socket);
             continue;
         }
         
-        TESTER_LOG(DBG, log_fp, 0, "branch name = %s", test_info.branch_name);
-        tester_send2mailbox((U8 *)&test_info, sizeof(test_info));
+        TESTER_LOG(DBG, log_fp, 0, "branch name = %s", test_info->branch_name);
+        tester_send2mailbox((U8 *)test_info, sizeof(*test_info));
     }
+
+    if (test_info != NULL) {
+        test_info->is_test_end = TRUE;
+        tester_send2mailbox((U8 *)test_info, sizeof(*test_info));
+    }
+    close(client_socket);
     free(this_thread);
+    if (test_info != NULL)
+        free(test_info);
 
     pthread_exit(NULL);
 }
@@ -205,7 +216,7 @@ STATUS tester_send2mailbox(U8 *mu, int mulen)
     }
 
     mail.len = mulen;
-    memcpy(mail.refp,mu,mulen); /* mail content will be copied into mail queue */
+    memcpy(mail.refp, mu, mulen); /* mail content will be copied into mail queue */
 
     mail.type = IPC_EV_TYPE_DRV;
     ipc_sw(msg_qid, &mail, sizeof(mail), -1);

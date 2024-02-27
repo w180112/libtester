@@ -337,7 +337,7 @@ FILE *create_logfile(TEST_TYPE test_type, char cwd[], char logfile_proc_path[])
     return log_fp;
 }
 
-STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_path[], STATUS(* init_func)(struct thread_list *this_thread), STATUS(* test_func)(struct thread_list *this_thread), STATUS(* timeout_func)(struct thread_list *this_thread))
+STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_path[], STATUS(* init_func)(struct thread_list *this_thread), STATUS(* test_func)(struct thread_list *this_thread), STATUS(* clean_func)(struct thread_list *this_thread))
 {
     char logfile_proc_path[LOG_PATH_LEN] = {'\0'};
     char *http_result_code = http_fail_header;
@@ -375,14 +375,14 @@ STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_pat
         test_thread->sock = test_info.socket;
         test_thread->test_type = test_type;
         test_thread->log_info = log_info;
-        test_thread->timeout_func = timeout_func;
+        test_thread->clean_func = clean_func;
         if (script_path != NULL)
             strncpy(test_thread->script_path, script_path, sizeof(test_thread->script_path)-1);
         test_thread->script_path[sizeof(test_thread->script_path)-1] = '\0';
         if (strlen(test_info.branch_name) != 0)
             strncpy(test_thread->branch_name, test_info.branch_name, sizeof(test_thread->branch_name)-1);
         test_thread->branch_name[sizeof(test_thread->branch_name)-1] = '\0';
-        uuid_generate(test_thread->test_uuid);
+        uuid_copy(test_thread->test_uuid, test_info.test_uuid);
         add_thread_id_to_list_lock(test_thread);
         test_obj.base_thread = test_thread;
         pthread_create(&test_thread->thread_id, NULL, get_cmd_output, (void *restrict)&test_obj);

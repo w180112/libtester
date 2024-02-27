@@ -19,7 +19,7 @@ struct tester_cmd {
     int allow_test_able_rerun;
     int (* init_func)(thread_list_t *this_thread);
     int (* test_func)(thread_list_t *this_thread);
-    int (* timeout_func)(thread_list_t *this_thread);
+    int (* clean_func)(thread_list_t *this_thread);
 };
 
 int tester_parse_args(int argc, char **argv);

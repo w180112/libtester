@@ -27,7 +27,7 @@ void timeout_handler(struct thread_list *timeout_thread)
     FILE *log_fp = timeout_thread->log_info.log_fp;
     TEST_TYPE test_type = timeout_thread->test_type;
 
-    timeout_thread->timeout_func(timeout_thread);
+    timeout_thread->clean_func(timeout_thread);
 
     pthread_mutex_lock(&thread_list_lock);
     if (is_thread_in_list(timeout_thread) == TRUE) {
@@ -39,6 +39,16 @@ void timeout_handler(struct thread_list *timeout_thread)
         fclose(log_fp);
     }
     pthread_mutex_unlock(&thread_list_lock);
+}
+
+void end_test_manually(uuid_t test_uuid)
+{
+    pthread_mutex_lock(&thread_list_lock);
+    thread_list_t *thread = NULL;
+    get_thread_by_uuid(test_uuid, &thread);
+    remove_all_threads_in_list(thread);
+    pthread_mutex_unlock(&thread_list_lock);
+    thread->clean_func(thread);
 }
 
 int tester_start(struct tester_cmd tester_cmd)
@@ -54,7 +64,7 @@ int tester_start(struct tester_cmd tester_cmd)
     BOOL        allow_test_able_rerun = tester_cmd.allow_test_able_rerun;
     STATUS      (*init_func)(struct thread_list *this_thread) = (STATUS(*)(struct thread_list *))tester_cmd.init_func;
     STATUS      (*test_func)(struct thread_list *this_thread) = (STATUS(*)(struct thread_list *))tester_cmd.test_func;
-    STATUS      (*timeout_func)(struct thread_list *this_thread) = (STATUS(*)(struct thread_list *))tester_cmd.timeout_func;
+    STATUS      (*clean_func)(struct thread_list *this_thread) = (STATUS(*)(struct thread_list *))tester_cmd.clean_func;
 
     if (test_types == NULL) {
         TESTER_LOG(INFO, NULL, 0, "test_types is empty");
@@ -107,7 +117,11 @@ int tester_start(struct tester_cmd tester_cmd)
         case IPC_EV_TYPE_DRV:
             mail = (tTESTER_MBX *)mbuf.mtext;
             struct test_info test_info = *(struct test_info *)mail->refp;
-            init_cmd(test_info, options.service_logfile_path, options.default_script_path, init_func, test_func, timeout_func);
+            if (test_info.is_test_end == TRUE) {
+                end_test_manually(test_info.test_uuid);
+                break;
+            }
+            init_cmd(test_info, options.service_logfile_path, options.default_script_path, init_func, test_func, clean_func);
             break;
         default:
             ;
@@ -294,7 +308,7 @@ thread_list_t *tester_new_cmd(thread_list_t base_thread, const char *cmd, const 
     new_thread->thread_id = 0;
     new_thread->test_type = base_thread.test_type;
     uuid_copy(new_thread->test_uuid, base_thread.test_uuid);
-    new_thread->timeout_func = base_thread.timeout_func;
+    new_thread->clean_func = base_thread.clean_func;
     new_thread->pid_list = NULL;
     new_thread->next = NULL;
 

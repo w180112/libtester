@@ -2,9 +2,12 @@
 #define _SOCK_H_
 
 #include <common.h>
+#include <uuid/uuid.h>
 
 struct test_info {
 	int socket;
+	BOOL is_test_end;
+	uuid_t test_uuid;
     char test_type[128];
 	char branch_name[128];
 };

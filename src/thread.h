@@ -41,7 +41,7 @@ struct thread_list {
     uuid_t test_uuid;
     char script_path[PATH_MAX];
     char branch_name[128];
-    STATUS (*timeout_func) (struct thread_list *this_thread);
+    STATUS (*clean_func) (struct thread_list *this_thread);
     struct thread_list *next;
 };
 
@@ -53,6 +53,7 @@ BOOL is_thread_in_list(struct thread_list *thread);
 BOOL is_thread_in_list_lock(struct thread_list *thread);
 void remove_thread_id_from_list(struct thread_list **rm_thread);
 BOOL is_test_running(TEST_TYPE test_type);
+void get_thread_by_uuid(uuid_t test_uuid, struct thread_list **threads);
 void get_all_timeout_threads_from_list(struct thread_list *timeout_thread, struct thread_list **timeout_list);
 void remove_all_threads_in_list(struct thread_list *del_list);
 void remove_all_timeout_threads_from_list(struct thread_list *timeout_thread);

@@ -8,7 +8,7 @@
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 TEST_TYPE check_test_type(char *test_type);
-STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_path[], STATUS(* init_func)(struct thread_list *this_thread), STATUS(* test_func)(struct thread_list *this_thread), STATUS(* timeout_func)(struct thread_list *this_thread));
+STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_path[], STATUS(* init_func)(struct thread_list *this_thread), STATUS(* test_func)(struct thread_list *this_thread), STATUS(* clean_func)(struct thread_list *this_thread));
 void exec_cmd(struct thread_list *this_thread);
 
 typedef struct test_obj {

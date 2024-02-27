@@ -88,24 +88,30 @@ BOOL is_test_running(TEST_TYPE test_type)
     return is_running;
 }
 
-void get_all_timeout_threads_from_list(struct thread_list *timeout_thread, struct thread_list **timeout_list)
+void get_thread_by_uuid(uuid_t test_uuid, struct thread_list **threads)
 {
     struct thread_list *next = thread_list_head, *cur = NULL, *prev = NULL;
-    uuid_t timeout_uuid;
-    uuid_copy(timeout_uuid, timeout_thread->test_uuid);
 
     while(next!=NULL) {
         cur = next;
         next=next->next;
-        if (uuid_compare(timeout_uuid, cur->test_uuid) == 0) {
-            cur->next = *timeout_list;
-            *timeout_list = cur;
+        if (uuid_compare(test_uuid, cur->test_uuid) == 0) {
+            cur->next = *threads;
+            *threads = cur;
             if (prev != NULL)
                 prev->next = next;
         }
         else 
             prev = cur;
     }
+}
+
+void get_all_timeout_threads_from_list(struct thread_list *timeout_thread, struct thread_list **timeout_list)
+{
+    uuid_t timeout_uuid;
+    uuid_copy(timeout_uuid, timeout_thread->test_uuid);
+
+    get_thread_by_uuid(timeout_uuid, timeout_list);
 }
 
 void remove_all_threads_in_list(struct thread_list *del_list)
