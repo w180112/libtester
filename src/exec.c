@@ -248,21 +248,24 @@ void *get_cmd_output(void *arg)
     test_obj_t *test_obj = (test_obj_t *)arg;
     struct thread_list *this_thread = test_obj->base_thread;
     TEST_TYPE test_type = this_thread->test_type;
+    char *res_hdr = NULL;
 
     if (test_obj->init_func(this_thread) == ERROR) {
         TESTER_LOG(INFO, this_thread->log_info.log_fp, test_type, "init test failed");
-        drv_xmit((U8 *)http_fail_header, strlen(http_fail_header)+1, this_thread->sock);
+        res_hdr = http_fail_header;
         goto end;
     }
     if (test_obj->test_func(this_thread) == ERROR) {
         TESTER_LOG(INFO, this_thread->log_info.log_fp, test_type, "test failed");
-        drv_xmit((U8 *)http_fail_header, strlen(http_fail_header)+1, this_thread->sock);
+        res_hdr = http_fail_header;
         goto end;
     }
 
     TESTER_LOG(INFO, this_thread->log_info.log_fp, test_type, "test succeed");
-    drv_xmit((U8 *)http_ok_header, strlen(http_ok_header)+1, this_thread->sock);
+    res_hdr = http_ok_header;
 end:
+    this_thread->clean_func(this_thread);
+    drv_xmit((U8 *)res_hdr, strlen(res_hdr)+1, this_thread->sock);
     close_logfile(this_thread);
     if (this_thread != NULL)
         remove_thread_id_from_list(&this_thread);

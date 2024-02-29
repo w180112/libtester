@@ -141,7 +141,7 @@ void *recv_cmd(void *arg)
         test_info = (struct test_info *)malloc(sizeof(struct test_info));
         memset(test_info, 0, sizeof(*test_info));
         test_info->socket = client_socket;
-        test_info->is_test_end = FALSE;
+        test_info->is_test_conn_end = FALSE;
         uuid_generate(test_info->test_uuid);
         if (parse_test_request(test_info, buf, n, log_fp) == ERROR) {
             drv_xmit((U8 *)http_400_header, strlen(http_400_header)+1, client_socket);
@@ -153,7 +153,7 @@ void *recv_cmd(void *arg)
     }
 
     if (test_info != NULL) {
-        test_info->is_test_end = TRUE;
+        test_info->is_test_conn_end = TRUE;
         tester_send2mailbox((U8 *)test_info, sizeof(*test_info));
     }
     close(client_socket);

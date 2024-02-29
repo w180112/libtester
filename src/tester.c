@@ -24,6 +24,7 @@ struct cmd_opt options = {
 
 void timeout_handler(struct thread_list *timeout_thread)
 {
+    /* we need to get log_fp in advance because timeout_thread memory region will be free */
     FILE *log_fp = timeout_thread->log_info.log_fp;
     TEST_TYPE test_type = timeout_thread->test_type;
 
@@ -33,7 +34,6 @@ void timeout_handler(struct thread_list *timeout_thread)
     if (is_thread_in_list(timeout_thread) == TRUE) {
         TESTER_LOG(INFO, timeout_thread->log_info.log_fp, test_type, "test [%s] timeout", timeout_thread->exec_cmd.cmd);
         drv_xmit((U8 *)http_fail_header, strlen(http_fail_header)+1, timeout_thread->sock);
-        /* we need to get log_fp in advance because timeout_thread memory region will be free */
         remove_all_timeout_threads_from_list(timeout_thread);
         timeout_thread = NULL;
         fclose(log_fp);
@@ -43,12 +43,20 @@ void timeout_handler(struct thread_list *timeout_thread)
 
 void end_test_manually(uuid_t test_uuid)
 {
+    BOOL is_test_terminated_by_user = FALSE;
+    thread_list_t end_thread;
+
     pthread_mutex_lock(&thread_list_lock);
     thread_list_t *thread = NULL;
     get_thread_by_uuid(test_uuid, &thread);
+    if (thread != NULL) {
+        is_test_terminated_by_user = TRUE;
+        memcpy(&end_thread, thread, sizeof(thread_list_t));
+    }   
     remove_all_threads_in_list(thread);
     pthread_mutex_unlock(&thread_list_lock);
-    thread->clean_func(thread);
+    if (is_test_terminated_by_user == TRUE)
+        end_thread.clean_func(&end_thread);
 }
 
 int tester_start(struct tester_cmd tester_cmd)
@@ -117,7 +125,7 @@ int tester_start(struct tester_cmd tester_cmd)
         case IPC_EV_TYPE_DRV:
             mail = (tTESTER_MBX *)mbuf.mtext;
             struct test_info test_info = *(struct test_info *)mail->refp;
-            if (test_info.is_test_end == TRUE) {
+            if (test_info.is_test_conn_end == TRUE) {
                 end_test_manually(test_info.test_uuid);
                 break;
             }

@@ -6,7 +6,7 @@
 
 struct test_info {
 	int socket;
-	BOOL is_test_end;
+	BOOL is_test_conn_end;
 	uuid_t test_uuid;
     char test_type[128];
 	char branch_name[128];

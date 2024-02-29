@@ -1,7 +1,9 @@
 name: libtester ci
 on:
   push: 
-    branches: [ "master" ]
+    branches:
+      - master
+      - v*
   pull_request:
     branches: [ "master" ]
 
