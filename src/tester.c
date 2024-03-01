@@ -5,7 +5,6 @@
 #include <errno.h>
 #include <uuid/uuid.h>
 #include "tester.h"
-#include "sock.h"
 #include "init.h"
 #include "dbg.h"
 #include "exec.h"
@@ -70,6 +69,7 @@ int tester_start(struct tester_cmd tester_cmd)
     char        **test_types = tester_cmd.test_types;
     int         test_type_count = tester_cmd.test_type_count;
     BOOL        allow_test_able_rerun = tester_cmd.allow_test_able_rerun;
+    tIPC_ID     q_key;
     STATUS      (*init_func)(struct thread_list *this_thread) = (STATUS(*)(struct thread_list *))tester_cmd.init_func;
     STATUS      (*test_func)(struct thread_list *this_thread) = (STATUS(*)(struct thread_list *))tester_cmd.test_func;
     STATUS      (*clean_func)(struct thread_list *this_thread) = (STATUS(*)(struct thread_list *))tester_cmd.clean_func;
@@ -79,11 +79,12 @@ int tester_start(struct tester_cmd tester_cmd)
         return -1;
     }
 
-    FILE *log_fp;
-    if (libtester_init(&q_key, options.service_logfile_path, &log_fp) == ERROR) {
-        TESTER_LOG(INFO, log_fp, 0, "libtester init failed");
+    pthread_t processing;
+    if (libtester_init(&q_key, options.service_logfile_path, &processing) == ERROR) {
+        TESTER_LOG(INFO, NULL, 0, "libtester init failed");
         return -1;
     }
+    FILE *log_fp = thread_list_head->log_info.log_fp;
 
     total_test_types = malloc(sizeof(char *) * test_type_count);
     if (total_test_types == NULL) {
@@ -99,14 +100,6 @@ int tester_start(struct tester_cmd tester_cmd)
         total_test_types_count++;
     }
     is_test_able_rerun = allow_test_able_rerun;
-
-    pthread_t processing;
-    thread_list_head = new_thread_node();
-    thread_list_head->log_info.log_fp = log_fp;
-    thread_list_head->test_type = 0; // ignore test type in socket thread
-    thread_list_head->next = NULL;
-    pthread_create(&processing, NULL, recv_req, (void *restrict)&q_key);
-    thread_list_head->thread_id = processing;
 
     for(;;) {
         TESTER_LOG(INFO, log_fp, 0, "%s","======================== waiting for new event ========================");
@@ -129,7 +122,7 @@ int tester_start(struct tester_cmd tester_cmd)
                 end_test_manually(test_info.test_uuid);
                 break;
             }
-            init_cmd(test_info, options.service_logfile_path, options.default_script_path, init_func, test_func, clean_func);
+            init_cmd(test_info, options.service_logfile_path, options.default_script_path, init_func, test_func, clean_func, q_key);
             break;
         default:
             ;
@@ -314,6 +307,7 @@ thread_list_t *tester_new_cmd(thread_list_t base_thread, const char *cmd, const 
     new_thread->sock = base_thread.sock;
     new_thread->log_info.log_fp = base_thread.log_info.log_fp;
     new_thread->thread_id = 0;
+    new_thread->q_key = base_thread.q_key;
     new_thread->test_type = base_thread.test_type;
     uuid_copy(new_thread->test_uuid, base_thread.test_uuid);
     new_thread->clean_func = base_thread.clean_func;

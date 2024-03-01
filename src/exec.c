@@ -158,6 +158,7 @@ void exec_cmd(struct thread_list *this_thread)
     const char *result_check = exec_cmd->result_check;
     FILE *log_fp = this_thread->log_info.log_fp;
     TEST_TYPE test_type = this_thread->test_type;
+    tIPC_ID q_key = this_thread->q_key;
     char cmd_stdout[65536];
     memset(cmd_stdout, 0, 65536);
     FILE *cmd_fp = NULL;
@@ -340,7 +341,7 @@ FILE *create_logfile(TEST_TYPE test_type, char cwd[], char logfile_proc_path[])
     return log_fp;
 }
 
-STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_path[], STATUS(* init_func)(struct thread_list *this_thread), STATUS(* test_func)(struct thread_list *this_thread), STATUS(* clean_func)(struct thread_list *this_thread))
+STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_path[], STATUS(* init_func)(struct thread_list *this_thread), STATUS(* test_func)(struct thread_list *this_thread), STATUS(* clean_func)(struct thread_list *this_thread), tIPC_ID q_key)
 {
     char logfile_proc_path[LOG_PATH_LEN] = {'\0'};
     char *http_result_code = http_fail_header;
@@ -379,6 +380,7 @@ STATUS init_cmd(struct test_info test_info, char logfile_path[], char script_pat
         test_thread->test_type = test_type;
         test_thread->log_info = log_info;
         test_thread->clean_func = clean_func;
+        test_thread->q_key = q_key;
         if (script_path != NULL)
             strncpy(test_thread->script_path, script_path, sizeof(test_thread->script_path)-1);
         test_thread->script_path[sizeof(test_thread->script_path)-1] = '\0';

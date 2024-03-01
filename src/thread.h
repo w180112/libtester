@@ -37,6 +37,7 @@ struct thread_list {
     struct pid_list *pid_list;
     struct exec_cmd_info exec_cmd;
     int sock;
+    tIPC_ID     q_key;
     TEST_TYPE test_type;
     uuid_t test_uuid;
     char script_path[PATH_MAX];

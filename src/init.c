@@ -2,12 +2,12 @@
 #include <errno.h>
 #include <signal.h>
 #include "thread.h"
+#include "sock.h"
 #include "dbg.h"
 
 #define libtester_Q_KEY 0x0b00
 
 tIPC_ID libtester_qid=-1;
-tIPC_ID q_key;
 pid_t 	tmr_pid;
 
 void libtester_clean()
@@ -83,33 +83,42 @@ void register_signal()
  * libtester_init: 
  *
  **************************************************************/
-STATUS libtester_init(tIPC_ID *q_key, char *logfile_path, FILE **log_fp)
+STATUS libtester_init(tIPC_ID *q_key, char *logfile_path, pthread_t *processing)
 {
     char pwd[PATH_MAX];
     char *logfile_name = "/libtester.log";
     strncpy(pwd, logfile_path, PATH_MAX-strlen(logfile_name)-1);
     pwd[PATH_MAX-strlen(logfile_name)-1] = '\0';
 
-    *log_fp = fopen(strncat(pwd, logfile_name, strlen(logfile_name)+1), "w");
-    if (*log_fp == NULL) {
+    FILE *log_fp = fopen(strncat(pwd, logfile_name, strlen(logfile_name)+1), "w");
+    if (log_fp == NULL) {
         TESTER_LOG(INFO, NULL, 0, "open libtester logfile failed: %s", strerror(errno));
         return ERROR;
     }
 
-    if (libtester_ipc_init(*log_fp) == ERROR) {
-        TESTER_LOG(INFO, *log_fp, 0, "ipc init failed: %s", strerror(errno));
-        fclose(*log_fp);
+    if (libtester_ipc_init(log_fp) == ERROR) {
+        TESTER_LOG(INFO, log_fp, 0, "ipc init failed: %s", strerror(errno));
+        fclose(log_fp);
         return ERROR;
     }
     *q_key = libtester_qid;
     tmr_pid = tmrInit();
     if (tmr_pid < 0) {
-        TESTER_LOG(INFO, *log_fp, 0, "timer init failed: %s", strerror(errno));
-        fclose(*log_fp);
+        TESTER_LOG(INFO, log_fp, 0, "timer init failed: %s", strerror(errno));
+        fclose(log_fp);
         return ERROR;
     }
     register_signal();
-    TESTER_LOG(INFO, *log_fp, 0, "%s", "============ tester init successfully ==============");
+
+    thread_list_head = new_thread_node();
+    thread_list_head->test_type = 0; // ignore test type in socket thread
+    thread_list_head->next = NULL;
+    pthread_create(processing, NULL, recv_req, (void *restrict)q_key);
+    thread_list_head->thread_id = *processing;
+    thread_list_head->log_info.log_fp = log_fp;
+
+    sleep(1);
+    TESTER_LOG(INFO, log_fp, 0, "%s", "============ tester init successfully ==============");
 
     return SUCCESS;
 }
