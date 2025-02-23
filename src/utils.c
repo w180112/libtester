@@ -45,7 +45,7 @@ FILE *create_logfile(TEST_TYPE test_type, char cwd[], char logfile_proc_path[])
     char logfile_name[192];
     sprintf(logfile_name, "/%s_%d-%d-%d_%d-%d-%d_%ld.log", test_type_str, time_format->tm_year+1900, 
         time_format->tm_mon+1, time_format->tm_mday, time_format->tm_hour, time_format->tm_min, time_format->tm_sec, tv.tv_usec);
-    strncat(pwd, logfile_name, strlen(logfile_name)+1);
+    strncat(pwd, logfile_name, PATH_MAX-1);
     FILE *log_fp = fopen(pwd, "w");
     if (log_fp == NULL) {
         TESTER_LOG(INFO, log_fp, test_type, "create logfile [%s] failed: %s", pwd, strerror(errno));

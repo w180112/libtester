@@ -93,8 +93,9 @@ int tester_start(struct tester_cmd tester_cmd)
     }
     total_test_types_count = 0;
     for (int i=0; i<test_type_count; i++) {
-        total_test_types[i] = malloc((strlen(test_types[i]) + 1) * sizeof(char));
-        strncpy(total_test_types[i], test_types[i], strlen(test_types[i])+1);
+        size_t test_type_len = strlen(test_types[i]) + 1;
+        total_test_types[i] = malloc(test_type_len);
+        strncpy(total_test_types[i], test_types[i], test_type_len);
         TESTER_LOG(INFO, log_fp, 0, "test type: %s", total_test_types[i]);
         total_test_types_count++;
     }

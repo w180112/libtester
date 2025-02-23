@@ -38,7 +38,8 @@ void LOGGER(U8 level, char *filename, int line_num, FILE *log_fp, TEST_TYPE test
     vsnprintf(msg, LOGGER_VA_MSG_LEN, fmt, ap);
     sprintf(buf, "%s: %s:%d> ", test_type_str, filename, line_num);
     
-    strncat(buf, msg, strlen(msg)+1);
+    strncat(buf, msg, LOGGER_BUF_LEN-1);
+    buf[LOGGER_BUF_LEN-1] = '\0';
     va_end(ap);
 
     buf[strlen(buf)] = '\0';

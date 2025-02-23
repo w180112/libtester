@@ -7,7 +7,7 @@
 ######################################	
 CC	= gcc
 INCLUDE = -Ilib/libutil -Ilib/picohttpparser
-CFLAGS = $(INCLUDE) -Wall -fPIC -g #-fsanitize=address
+CFLAGS = $(INCLUDE) -Wall -Werror -fPIC -g -O3 #-fsanitize=address
 
 SRC = $(wildcard src/*.c)
 SHARED = bin/libtester.so
@@ -25,7 +25,7 @@ all: build-libs
 # 	Must use \tab key after new line
 ######################################
 build-libs: $(OBJ)
-	gcc -shared -o $(SHARED) $(OBJ) -lutils -lpicohttpparser -lpthread -lm -ldl -lutil -lconfig -luuid
+	$(CC) $(CFLAGS) -shared -o $(SHARED) $(OBJ) -lutils -lpicohttpparser -lpthread -lm -ldl -lutil -lconfig -luuid
 	ar -rcs $(STATIC) $(OBJ)
 
 install:

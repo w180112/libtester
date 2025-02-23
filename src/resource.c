@@ -82,7 +82,8 @@ struct pid_list *find_co_pid(pid_t parent_pid, TEST_TYPE test_type)
             char state;
             int ppid;
             int gpid;
-            fscanf(fp, "%d %s %c %d %d", &pid, comm, &state, &ppid, &gpid);
+            if (fscanf(fp, "%d %s %c %d %d", &pid, comm, &state, &ppid, &gpid) != 5)
+                continue;
             fclose(fp);
             if (ppid == parent_pid) {
                 TESTER_LOG(DBG, NULL, test_type, "find co pids = %d, pid name is: %s", pid, comm);
