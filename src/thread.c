@@ -9,8 +9,6 @@
 struct thread_list *thread_list_head;
 pthread_mutex_t thread_list_lock;
 
-extern void kill_co_process(struct thread_list *target_thread);
-
 void add_thread_id_to_list(struct thread_list *new_thread)
 {
     struct thread_list *cur;

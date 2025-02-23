@@ -4,7 +4,7 @@
 #include <common.h>
 #include <uuid/uuid.h>
 
-typedef int TEST_TYPE;
+#include "tester.h"
 
 struct exec_cmd_info{
     char cmd[8192];

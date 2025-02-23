@@ -9,12 +9,12 @@
 #include <common.h>
 #include "thread.h"
 #include "dbg.h"
+#include "utils.h"
 
 #define LOGGER_VA_MSG_LEN 512
 #define LOGGER_BUF_LEN 1024
 
 U8 tester_dbg_flag;
-extern char **total_test_types;
 
 /***************************************************
  * LOGGER:

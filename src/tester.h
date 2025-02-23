@@ -1,9 +1,10 @@
 #ifndef _TESTER_H_
 #define _TESTER_H_
 
-#include "thread.h"
-#include "dbg.h"
+#include <stdint.h>
+//#include "thread.h"
 
+typedef int TEST_TYPE;
 typedef struct thread_list thread_list_t;
 
 struct tester_info {

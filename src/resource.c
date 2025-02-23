@@ -1,5 +1,5 @@
-#include <sys/stat.h>
-#include <dirent.h>
+#include <dirent.h> 
+
 #include "thread.h"
 #include "dbg.h"
 
@@ -136,19 +136,6 @@ struct pid_list *find_co_pid(pid_t parent_pid, TEST_TYPE test_type)
     }
 
     return NULL;
-}
-
-void close_logfile(struct thread_list *target_thread)
-{
-    if (strlen(target_thread->log_info.logfile_proc_path) != 0) {
-        struct stat statbuf;
-        if (stat(target_thread->log_info.logfile_proc_path, &statbuf) == 0) {
-            if (target_thread->log_info.log_fp != NULL) {
-                fclose(target_thread->log_info.log_fp);
-                target_thread->log_info.log_fp = NULL;
-            }
-        }
-    }
 }
 
 BOOL is_process_exist(pid_t pid)

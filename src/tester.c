@@ -11,10 +11,9 @@
 #include "thread.h"
 #include "resource.h"
 #include "parse.h"
+#include "utils.h"
 
 extern BOOL is_test_able_rerun;
-extern char **total_test_types;
-extern TEST_TYPE total_test_types_count;
 struct cmd_opt options = {
     .service_logfile_path = "\0",
     .default_script_path = "\0",
